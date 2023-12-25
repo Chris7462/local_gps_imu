@@ -31,7 +31,7 @@ private:
 
   GeographicLib::LocalCartesian geo_converter_;
   bool oxts_init_;
-  Eigen::Matrix3d initial_rotation_;
+  Eigen::Matrix3d initial_rotation_inv_;
   nav_msgs::msg::Path gps_imu_path_;
 
   message_filters::Subscriber<sensor_msgs::msg::Imu> sub_imu_;

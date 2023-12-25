@@ -7,14 +7,14 @@
 
 \title{Localization EKF}
 \author{Yi-Chen Zhang}
-\date{November 2023}
+\date{\today}
 
 \begin{document}
 
 \maketitle
 
 \section{State representation $\bm{x}$ and motion input $\bm{u}$}
-Let $x$ and $y$ represent positions in the $x$- and $y$-directions, respectively. The variables $\theta$, $\nu$, $\omega$, and $\alpha$ denote the yaw angle, linear velocity, yaw angle change rate, and linear acceleration, respectively. The target state $\bm{x}$ is defined as:
+Let $x$ and $y$ represent positions in the $x$- and $y$-directions, respectively. The variables $\theta$, $\nu$, $\omega$, and $\alpha$ denote the yaw angle, linear velocity, yaw angle rate, and linear acceleration, respectively. The target state $\bm{x}$ is defined as:
 \[
   \bm{x} = [x, y, \theta, \nu, \omega, \alpha]^{T}
 \]
@@ -24,7 +24,7 @@ The motion input is defined as:
 \]
 
 \section{The measurement $\bm{z}$}
-Suppose we have a GPS sensor and IMU sensor. The GPS sensor provides the longitudinal position $x$ and lateral position $y$. The IMU sensor provides yaw angle change rate $\omega$, and linear acceleration $\alpha$. The measurement $\bm{z}$ is defined as:
+Suppose we have a GPS sensor and IMU sensor. The GPS sensor provides the longitudinal position $x$ and lateral position $y$. The IMU sensor provides yaw angle rate $\omega$, and linear acceleration $\alpha$. The measurement $\bm{z}$ is defined as:
 \[
   \bm{z} = [x, y, \omega, \alpha]^{T}
 \]
@@ -46,21 +46,21 @@ The 2-D kinematic equation for the vehicle state at time $t$, denoted as $\bm{x}
     y_{t-1} + (\nu_{t-1}\Delta t + \frac{1}{2}\alpha_{t-1}\Delta t^2) \sin(\theta_{t-1}+\frac{1}{2}\omega_{t-1}\Delta t)\\
     \theta_{t-1} + \omega_{t-1}\Delta t\\
     \nu_{t-1} + \alpha_{t-1} \Delta t\\
-    \omega_{t-1}\\
-    \alpha_{t-1}
+    \omega_{t-1}+\epsilon_{\omega}\\
+    \alpha_{t-1}+\epsilon_{\alpha}
   \end{bmatrix}
 \end{equation}
-The above equation \eqref{eq:state_transition} can be expressed as the non-linear function $\bm{f}$:
+We assume that the noises originate from the motion input. The above equation \eqref{eq:state_transition} can be expressed as the non-linear function $\bm{f}$:
 \[
-  \bm{x}_{t} = \bm{f}(\bm{x}_{t-1}, \bm{u}_{t}+\bm{\epsilon}_{t})
+  \bm{x}_{t} = \bm{f}(\bm{x}_{t-1}, \bm{u}_{t},\bm{\epsilon}_{t})
 \]
-Here, the $\bm{\epsilon}_{t}$ represents the noise associated with the motion input $\bm{u}_{t}$. Moreover, the non-linear function $\bm{f}$ can be approximated using Taylor expansion at the previously predicted state $\bm{\mu}_{t-1}$:
+Here, $\bm{\epsilon}_{t}=[0, 0, 0, 0, \epsilon_{\omega}, \epsilon_{\alpha}]^{T}$ represents the noise associated with the motion input $\bm{u}_{t}$. Additionally, the non-linear function $\bm{f}$ can be approximated using a Taylor expansion at the previously updated state $\bm{\mu}_{t-1}$, with $\bm{\epsilon}_{t}=\bm{0}$:
 \[
-  \bm{f}(\bm{x}_{t-1}, \bm{u}_{t} + \bm{\epsilon}_{t}) \approx \bm{f}(\bm{\mu}_{t-1}, \bm{u}_{t})+\bm{F}_{t}(\bm{x}_{t-1}-\bm{\mu}_{t-1})+\bm{W}_{t}\bm{\epsilon}_{t}
+  \bm{f}(\bm{x}_{t-1}, \bm{u}_{t}, \bm{\epsilon}_{t}) \approx \bm{f}(\bm{\mu}_{t-1}, \bm{u}_{t}, \bm{0})+\bm{F}_{t}(\bm{x}_{t-1}-\bm{\mu}_{t-1})+\bm{W}_{t}\bm{\epsilon}_{t}
 \]
-Here, $\bm{F}_{t}$ represents the derivative of the state transition function $\bm{f}$ with respect to state $\bm{x}$, and $\bm{W}_{t}$ represents the derivative of the state transition function $\bm{f}$ with respect to motion input $\bm{u}_{t}$. The term $\bm{W}_{t}$ essentially denotes the noise gain of the system, and $\bm{\epsilon}_{t}$ represents the constant piecewise jerk. To simplify the notation, we define $\Delta l$ as $\nu_{t-1}\Delta t + \frac{1}{2}\alpha_{t-1}\Delta t^2$ and $\Delta\theta$ as $\theta_{t-1} + \frac{1}{2}\omega_{t-1}\Delta t$. The derivative matrix of the state transition function $\bm{F}_{t}$ is denoted as:
+Here, $\bm{F}_{t}$ represents the derivative of the state transition function $\bm{f}$ with respect to state $\bm{x}$, and $\bm{W}_{t}$ represents the derivative of the state transition function $\bm{f}$ with respect to the noise $\bm{\epsilon}$. The term $\bm{W}_{t}$ essentially denotes the noise gain of the system. To simplify the notation, we define $\Delta l$ as $\nu_{t-1}\Delta t + \frac{1}{2}\alpha_{t-1}\Delta t^2$ and $\Delta\theta$ as $\theta_{t-1} + \frac{1}{2}\omega_{t-1}\Delta t$. The derivative matrix of the state transition function $\bm{F}_{t}$ is denoted as:
 \begin{eqnarray*}
-  \bm{F}_{t} & = & \frac{\partial\bm{f}}{\partial\bm{x}_{t}}\\
+  \bm{F}_{t} & = & \frac{\partial\bm{f}}{\partial\bm{x}}\\
   %& = & \begin{bmatrix}
     %\frac{\partial f_{x}}{\partial x} & \frac{\partial f_{x}}{\partial y} & \frac{\partial f_{x}}{\partial \theta} & \frac{\partial f_{x}}{\partial \nu} & \frac{\partial f_{x}}{\partial \omega} & \frac{\partial f_{x}}{\partial \alpha}\\
     %\frac{\partial f_{y}}{\partial x} & \frac{\partial f_{y}}{\partial y} & \frac{\partial f_{y}}{\partial \theta} & \frac{\partial f_{y}}{\partial \nu} & \frac{\partial f_{y}}{\partial \omega} & \frac{\partial f_{y}}{\partial \alpha}\\
@@ -80,7 +80,7 @@ Here, $\bm{F}_{t}$ represents the derivative of the state transition function $\
 \end{eqnarray*}
 Furthermore, $\bm{W}_{t}$ can be expressed in matrix form:
 \begin{eqnarray*}
-  \bm{W}_{t} & = & \frac{\partial\bm{f}}{\partial\bm{u}_{t}}\\
+  \bm{W}_{t} & = & \frac{\partial\bm{f}}{\partial\bm{\epsilon}}\\
   %& = & \begin{bmatrix}
   %  \frac{\partial f_{x}}{\partial \nu} & \frac{\partial f_{x}}{\partial \omega} & \frac{\partial f_{x}}{\partial \alpha}\\
   %  \frac{\partial f_{y}}{\partial \nu} & \frac{\partial f_{y}}{\partial \omega} & \frac{\partial f_{y}}{\partial \alpha}\\
@@ -90,56 +90,81 @@ Furthermore, $\bm{W}_{t}$ can be expressed in matrix form:
   %  \frac{\partial f_{\alpha}}{\partial \nu} & \frac{\partial f_{\alpha}}{\partial \omega} & \frac{\partial f_{\alpha}}{\partial \alpha}
   %\end{bmatrix}\\
   & = & \begin{bmatrix}
-    -\frac{1}{2}\Delta t\Delta l\sin(\Delta\theta) & \frac{1}{2}\Delta t^{2}\cos(\Delta\theta)\\
-    \frac{1}{2}\Delta t\Delta l\cos(\Delta\theta) & \frac{1}{2}\Delta t^{2}\sin(\Delta\theta)\\
-    \Delta t & 0\\
-    0 & \Delta t\\
-    1 & 0\\
-    0 & 1
+    0 & 0 & 0 & 0 & -\frac{1}{2}\Delta t\Delta l\sin(\Delta\theta) & \frac{1}{2}\Delta t^{2}\cos(\Delta\theta)\\
+    0 & 0 & 0 & 0 & \frac{1}{2}\Delta t\Delta l\cos(\Delta\theta) & \frac{1}{2}\Delta t^{2}\sin(\Delta\theta)\\
+    0 & 0 & 0 & 0 & \Delta t & 0\\
+    0 & 0 & 0 & 0 & 0 & \Delta t\\
+    0 & 0 & 0 & 0 & 1 & 0\\
+    0 & 0 & 0 & 0 & 0 & 1
   \end{bmatrix}
 \end{eqnarray*}
-We will derive the process noise covariance $\bm{Q}_{t}$ in section \ref{sec:process_noise}.
+%We will derive the process noise covariance $\bm{Q}_{t}$ in section \ref{sec:process_noise}.
 
 \section{Measurement transformation matrix $\bm{H}$}
 The measurements of the system can be described by a linear relation between the state and the measurement at the current step $t$. This relation is expressed as:
-$\bm{H}$:
 \begin{equation}
   \label{eq:measurement_model}
-  \bm{z}_{t} = \bm{H}_{t}\bm{x}_{t} + \bm{\delta}_{t}
+  \begin{bmatrix}
+    z_{x}\\
+    z_{y}\\
+    z_{\omega}\\
+    z_{\alpha}
+  \end{bmatrix}=
+  \begin{bmatrix}
+    x_{t} + \delta_{x}\\
+    y_{t} + \delta_{y}\\
+    \omega_{t} + \delta_{\omega}\\
+    \alpha_{t} + \delta_{\alpha}
+  \end{bmatrix}
 \end{equation}
-Here, $\bm{H}_{t}$ is a linear transformation matrix, and $\bm{\delta}_{t}$ represents the measurement error. The equation \eqref{eq:measurement_model} can be written in matrix from as:
+We assume that the measurements are associated with measurement noises, and the noises are independent of each other. The above equation \eqref{eq:measurement_model} can be expressed as the linear function $\bm{h}$:
+
 \[
-  \bm{z}_{t} = \begin{bmatrix}
-    1 & 0 & 0 & 0 & 0 & 0\\
-    0 & 1 & 0 & 0 & 0 & 0\\
-    0 & 0 & 0 & 0 & 1 & 0\\
-    0 & 0 & 0 & 0 & 0 & 1\\
-  \end{bmatrix}\bm{x}_{t}+\bm{\delta}_{t}
+  \bm{z}_{t} = \bm{h}(\bm{x}_{t}, \bm{\delta}_{t})
 \]
-So, we have the transformation matrix $\bm{H}_{t}$ as follows:
+
+Here, $\bm{\delta}_{t}=[\delta_{x}, \delta_{y}, \delta_{\omega}, \delta_{\alpha}]^{T}$ represents the measurement error. We can apply the same technique to expend the function $\bm{h}$ at the previously predicted state $\bar{\bm{\mu}}_{t}$, with $\bm{\delta}_{t}=\bm{0}$:
 \[
-  \bm{H}_{t} = \begin{bmatrix}
+  \bm{h}(\bm{x}_{t},\bm{\delta}_{t}) \approx \bm{h}(\bar{\bm{\mu}}_{t}, \bm{0}) + \bm{H}_{t}(\bm{x}_{t}-\bar{\bm{\mu}}_{t}) + \bm{V}_{t}\bm{\delta}_{t}
+\]
+Here, $\bm{H}_{t}$ represents the derivative of the measurement function $\bm{h}$ with respect to $\bm{x}$, and $\bm{V}_{t}$ represents the derivative of the measurement function $\bm{h}$ with respect to the noise $\bm{\delta}$. The term $\bm{V}_{t}$ is the noise gain of the measurement. The derivative matrix of the measurment function is denoted as:
+\begin{eqnarray*}
+  \bm{H}_{t} & = & \frac{\partial\bm{h}}{\partial{\bm{x}}}\\ 
+  & = & \begin{bmatrix}
     1 & 0 & 0 & 0 & 0 & 0\\
     0 & 1 & 0 & 0 & 0 & 0\\
     0 & 0 & 0 & 0 & 1 & 0\\
     0 & 0 & 0 & 0 & 0 & 1\\
   \end{bmatrix}.
-\]
-The replicated rows in $\bm{H}_{t}$ result from incorporating yaw angle change rate information from both the IMU sensor and the wheel encoder.
+\end{eqnarray*}
+In addition, $\bm{V}_{t}$ can be expressed in matrix form:
+\begin{eqnarray*}
+  \bm{V}_{t} & = & \frac{\partial \bm{h}}{\partial \bm{\delta}}\\
+  & = & \begin{bmatrix}
+    1 & 0 & 0 & 0\\
+    0 & 1 & 0 & 0\\
+    0 & 0 & 1 & 0\\
+    0 & 0 & 0 & 1
+  \end{bmatrix}
+\end{eqnarray*}
 
 \section{Process noise covariance matrix $\bm{Q}$}
-\label{sec:process_noise}
-We assume that the jerk $\bm{\epsilon}_{t}$ follows a normal distribution with a mean of $\bm{0}$ and a covariance matrix of $\bm{\Omega}_{t}$. Additionally, we define the covariance matrix $\bm{\Omega}$ as
+% Yi-Chen
+As we mentioned earlier, we assume that the system noise $\bm{\epsilon}_{t}$ is associated with the motion input $\bm{u}_{t}$. Furthermore, we assume that $\bm{\epsilon}_{t}$ follows a normal distribution with a mean of $\bm{0}$ and a covariance matrix of $\bm{Q}_{t}$. Additionally, we define the covariance matrix $\bm{Q}_{t}$ as
 \[
-  \bm{\Omega}_{t}=\begin{bmatrix}
-    \sigma_{\omega}^{2} & 0\\
-    0 & \sigma_{\alpha}^{2}
+  \bm{Q}_{t}=\begin{bmatrix}
+    0 & 0 & 0 & 0 & 0 & 0\\
+    0 & 0 & 0 & 0 & 0 & 0\\
+    0 & 0 & 0 & 0 & 0 & 0\\
+    0 & 0 & 0 & 0 & 0 & 0\\
+    0 & 0 & 0 & 0 &\sigma_{\omega}^{2} & 0\\
+    0 & 0 & 0 & 0 &0 & \sigma_{\alpha}^{2}
   \end{bmatrix}
 \]
-Here, $\sigma_{\omega}$ and $\sigma_{\alpha}$ are the standard deviation of the yaw angle change rate and linear acceleration, respectively. The process noise covariance matrix $\bm{Q}_{t}$, representing the error in the state process, can be expressed as follows:
-\[
-  \bm{Q}_{t} = \bm{W}_{t}\bm{\Omega}_{t}\bm{W}_{t}^{T}
-\]
+Here, $\sigma_{\omega}$ and $\sigma_{\alpha}$ are the standard deviation of the yaw angle rate and linear acceleration, respectively. %The process noise covariance matrix $\bm{Q}_{t}$, representing the error in the state process, can be expressed as follows:
+% \[
+%   \bm{Q}_{t} = \bm{W}_{t}\bm{\Omega}_{t}\bm{W}_{t}^{T}
+% \]
 
 \section{Measurement noise covariance matrix $\bm{R}$}
 For the measurement error $\bm{\delta}_{t}$, we assume it follows a normal distribution with a mean of $\bm{0}$ and a covariance matrix of $\bm{R}_{t}$. Additionally, we assume that all measurement noises are independent. Consequently, we can disregard any interaction between them, resulting in the following diagonal covariance matrix:
@@ -160,15 +185,16 @@ Now we are ready to implement extended Kalman filter (EKF) for the vehicle local
 \begin{center}
 \begin{tabular}{ll}
   Predicted state estimate: & $\bar{\bm{\mu}}_{t} = \bm{f}_{t}(\bm{\mu}_{t-1}, \bm{u}_{t})$\\
-  Predicted error covariance: & $\bar{\bm{\Sigma}}_{t} = \bm{F}_{t}\bm{\Sigma}_{t-1}\bm{F}_{t}^{T}+\bm{Q}_{t}$
+  Predicted error covariance: & $\bar{\bm{\Sigma}}_{t} = \bm{F}_{t}\bm{\Sigma}_{t-1}\bm{F}_{t}^{T}+\bm{W}_{t}\bm{Q}_{t}\bm{W}_{t}^{T}$
 \end{tabular}
 \end{center}
 
 \textbf{Update}:
 \begin{center}
 \begin{tabular}{ll}
-  Measurement residual: & $\bm{y}_{t} = \bm{z}_{t}-\bm{H}_{t}\bar{\bm{\mu}}_{t}$\\
-  Kalman gain: & $\bm{K}_{t} = \bar{\bm{\Sigma}}_{t}\bm{H}_{t}^{T}(\bm{H}_{t}\bar{\bm{\Sigma}}_{t}\bm{H}_{t}^{T}+\bm{R}_{t})^{-1}$\\
+  Innovation: & $\bm{y}_{t} = \bm{z}_{t}-\bm{h}(\bar{\bm{\mu}}_{t})$\\
+  Innovation covariance: & $\bm{S}_{t} = \bm{H}_{t}\bar{\bm{\Sigma}}_{t}\bm{H}_{t}^{T}+\bm{V}_{t}\bm{R}_{t}\bm{V}_{t}^{T}$\\
+  Kalman gain: & $\bm{K}_{t} = \bar{\bm{\Sigma}}_{t}\bm{H}_{t}^{T}\bm{S}_{t}^{-1}$\\
   Updated state estimate: & $\bm{\mu}_{t} = \bar{\bm{\mu}}_{t} + \bm{K}_{t}\bm{y}_{t}$\\
   Updated error covariance: & $\bm{\Sigma}_{t} = (\bm{I}-\bm{K}_{t}\bm{H}_{t})\bar{\bm{\Sigma}}_{t}$
 \end{tabular}
@@ -176,13 +202,13 @@ Now we are ready to implement extended Kalman filter (EKF) for the vehicle local
 
 For the updated error covariance, the Joseph formula should be employed for numerical stability. This can be expressed as follows:
 \[
-  \bm{\Sigma}_{t} = (\bm{I}-\bm{K}_{t}\bm{H}_{t})\bar{\bm{\Sigma}}_{t}(\bm{I}-\bm{K}_{t}\bm{H}_{t})^{T}+\bm{K}_{t}\bm{R}_{t}\bm{K}_{t}^{T}
+  \bm{\Sigma}_{t} = (\bm{I}-\bm{K}_{t}\bm{H}_{t})\bar{\bm{\Sigma}}_{t}(\bm{I}-\bm{K}_{t}\bm{H}_{t})^{T}+\bm{K}_{t}\bm{V}_{t}\bm{R}_{t}\bm{V}_{t}^{T}\bm{K}_{t}^{T}
 \]
 
-In the case where the measurement model is correct, the KF utilizes it for updates. Thus, a conditional statement for data association is introduced. The Mahalanobis distance is calculated for the measurement residual to determine if the measurement is suitable for updating:
+In the case where the measurement model is correct, the Kalman filter utilizes it for updates. Thus, a conditional statement for data association is introduced. The Mahalanobis distance is calculated for the measurement residual to determine if the measurement is suitable for updating:
 \[
-  (\bm{z}_{t}-\bm{H}_{t}\bar{\bm{\mu}}_{t})^{T}(\bm{H}_{t}\bar{\bm{\Sigma}}_{t}\bm{H}_{t}^{T}+\bm{R}_{t})^{-1}(\bm{z}_{t}-\bm{H}_{t}\bar{\bm{\mu}}_{t}) \leq D_{th},
+  (\bm{z}_{t}-\bm{h}(\bar{\bm{\mu}}_{t}))^{T}\bm{S}_{t}^{-1}(\bm{z}_{t}-\bm{h}(\bar{\bm{\mu}}_{t})) \leq D_{th},
 \]
-Here, $D_{th}$ represents a predetermined threshold. One can further show that the quadratic term is actually a $\chi^{2}$ distribution.
+Here, $D_{th}$ represents a predetermined threshold. One can further show that the quadratic term is actually a $\chi_{m}^{2}$ distribution, where $m$ is the number of measurements.
 
 \end{document}
