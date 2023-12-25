@@ -16,7 +16,7 @@ def generate_launch_description():
     gps_imu_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
-                FindPackageShare("gps_imu_fusion"), "launch", "gps_imu_fusion_launch.py"
+                FindPackageShare("gps_imu_node"), "launch", "gps_imu_launch.py"
             ])
         ])
     )
@@ -25,7 +25,7 @@ def generate_launch_description():
         package="rviz2",
         executable="rviz2",
         name="rviz2",
-        arguments=["-d", join(get_package_share_directory("gps_imu_fusion"), "rviz", "gps_imu_fusion.rviz")]
+        arguments=["-d", join(get_package_share_directory("gps_imu_node"), "rviz", "gps_imu.rviz")]
     )
 
     return LaunchDescription([

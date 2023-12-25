@@ -7,7 +7,6 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
-#include <nav_msgs/msg/path.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 
 // Eigen header
@@ -30,9 +29,7 @@ private:
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   GeographicLib::LocalCartesian geo_converter_;
-  bool oxts_init_;
-  Eigen::Matrix3d initial_rotation_inv_;
-  nav_msgs::msg::Path gps_imu_path_;
+  bool gps_init_;
 
   message_filters::Subscriber<sensor_msgs::msg::Imu> sub_imu_;
   message_filters::Subscriber<sensor_msgs::msg::NavSatFix> sub_gps_;

@@ -5,9 +5,9 @@ from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
     gps_imu_node = Node(
-        package="gps_imu_fusion",
+        package="gps_imu_node",
         executable="gps_imu_node",
-        name="gps_imu_fusion"
+        name="gps_imu_node"
     )
 
     trajectory_server_node=Node(

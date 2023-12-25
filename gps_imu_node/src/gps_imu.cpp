@@ -1,5 +1,4 @@
 // ROS header
-#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <tf2_eigen/tf2_eigen.hpp>
 
 // Eigen header
@@ -13,7 +12,7 @@ namespace gps_imu_node
 {
 
 GpsImuNode::GpsImuNode()
-  : Node("gps_imu_node"), oxts_init_(false), sync_(policy_t(10), sub_imu_, sub_gps_)
+  : Node("gps_imu_node"), gps_init_(false), sync_(policy_t(10), sub_imu_, sub_gps_)
 {
   rclcpp::QoS qos(10);
 
@@ -29,31 +28,20 @@ GpsImuNode::GpsImuNode()
 void GpsImuNode::sync_callback(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
   const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg)
 {
-  if (!oxts_init_) {
-    // use the first imu orientation as (0,0,0,0)
-    Eigen::Quaterniond init_rot;
-    tf2::fromMsg(imu_msg->orientation, init_rot);
-    initial_rotation_inv_ = init_rot.toRotationMatrix().transpose();
-
+  if (!gps_init_) {
     // use the first gps point as map (0,0,0)
     geo_converter_.Reset(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude);
-
-    oxts_init_ = true;
+    gps_init_ = true;
   }
-
-  // orientation information from imu_msg
-  Eigen::Quaterniond imu_orientation;
-  tf2::fromMsg(imu_msg->orientation, imu_orientation);
 
   // pose information from gps_msg
   double lat, lon, alt;
   geo_converter_.Forward(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude, lat, lon, alt);
+  Eigen::Vector3d pose(lat, lon, alt);
 
-  // rotate the pose with init_rotation_
-  Eigen::Vector3d pose = initial_rotation_inv_ * Eigen::Vector3d(lat, lon, alt);  // p = R * p
-
-  // rotate orientation and convert to quaternion
-  Eigen::Quaterniond orientation(initial_rotation_inv_ * imu_orientation.toRotationMatrix());
+  // orientation information from imu_msg
+  Eigen::Quaterniond orientation;
+  tf2::fromMsg(imu_msg->orientation, orientation);
 
   // publish tf msg
   geometry_msgs::msg::TransformStamped gps_imu_tf;
