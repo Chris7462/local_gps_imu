@@ -10,7 +10,7 @@ namespace ekf_localizer
 {
 
 EkfLocalizer::EkfLocalizer()
-: Node("ekf_localizer_node"), freq_{40.0}, dt_{1.0/freq_}, gps_init_{false},
+: Node("ekf_localizer_node"), freq_{40.0}, dt_{1.0 / freq_}, gps_init_{false},
   alt_{0.0}, pitch_{0.0}, roll_{0.0}, odom_base_link_trans_(), imu_buff_(),
   gps_buff_(), geo_converter_(), sys_(), imu_model_(), gps_model_(), ekf_()
 {
@@ -41,7 +41,8 @@ EkfLocalizer::EkfLocalizer()
   gps_sub_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
     "kitti/nav_sat_fix", qos, std::bind(&EkfLocalizer::gps_callback, this, std::placeholders::_1));
 
-  timer_ = this->create_wall_timer(std::chrono::milliseconds(static_cast<int>(dt_ * 1000)),
+  timer_ = this->create_wall_timer(
+    std::chrono::milliseconds(static_cast<int>(dt_ * 1000)),
     std::bind(&EkfLocalizer::run_ekf, this));
 
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -122,7 +123,8 @@ void EkfLocalizer::run_ekf()
       // if the masurement is okay to fuse?
       double qchisq_imu = get_parameter("qchisq.imu").as_double();
       if (ekf_.mahalanobis(imu_model_, z) > qchisq_imu) {
-        RCLCPP_INFO(this->get_logger(), "Measurement IMU is over the threshold. Discard this measurement.");
+        RCLCPP_INFO(
+          get_logger(), "Measurement IMU is over the threshold. Discard this measurement.");
       } else {  // okay to fuse.
         ekf_.update(imu_model_, z);
         ekf_.wrapStateYaw();
@@ -154,7 +156,7 @@ void EkfLocalizer::run_ekf()
     mtx_.lock();
     if ((current_time - rclcpp::Time(gps_buff_.front()->header.stamp)).seconds() > 0.1) {  // time sync has problem
       gps_buff_.pop();
-      RCLCPP_WARN(this->get_logger(), "Timestamp unaligned, please check your GPS data.");
+      RCLCPP_WARN(get_logger(), "Timestamp unaligned, please check your GPS data.");
       mtx_.unlock();
     } else {
       auto msg = gps_buff_.front();
@@ -183,7 +185,8 @@ void EkfLocalizer::run_ekf()
       // if the masurement is okay to fuse?
       double qchisq_gps = get_parameter("qchisq.gps").as_double();
       if (ekf_.mahalanobis(gps_model_, z) > qchisq_gps) {
-        RCLCPP_INFO(this->get_logger(), "Measurement GPS is over the threshold. Discard this measurement.");
+        RCLCPP_INFO(
+          get_logger(), "Measurement GPS is over the threshold. Discard this measurement.");
       } else {
         ekf_.update(gps_model_, z);
         ekf_.wrapStateYaw();

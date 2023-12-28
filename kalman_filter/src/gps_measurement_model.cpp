@@ -25,7 +25,7 @@ GpsMeasurement GpsMeasurementModel::h(const State & x) const
   return measurement;
 }
 
-void GpsMeasurementModel::updateJacobian(const State & x)
+void GpsMeasurementModel::updateJacobians(const State & x)
 {
   (void)x;  // not using state. Just put this line to silence compiler warning.
 

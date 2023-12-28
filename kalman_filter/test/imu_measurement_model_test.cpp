@@ -51,9 +51,9 @@ TEST_F(ImuMeasurementModelTest, h_TC1)
   EXPECT_DOUBLE_EQ(measurement.alpha(), 1.0);
 }
 
-TEST_F(ImuMeasurementModelTest, updateJacobian_TC1)
+TEST_F(ImuMeasurementModelTest, updateJacobians_TC1)
 {
-  meas->updateJacobian(x);
+  meas->updateJacobians(x);
   EXPECT_DOUBLE_EQ(meas->H_(kalman::ImuMeasurement::THETA, kalman::State::THETA), 1.0);
   EXPECT_DOUBLE_EQ(meas->H_(kalman::ImuMeasurement::OMEGA, kalman::State::OMEGA), 1.0);
   EXPECT_DOUBLE_EQ(meas->H_(kalman::ImuMeasurement::ALPHA, kalman::State::ALPHA), 1.0);

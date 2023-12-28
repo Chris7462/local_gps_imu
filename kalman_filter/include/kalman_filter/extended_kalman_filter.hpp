@@ -38,12 +38,13 @@ protected:
 private:
   State x_;
   StateCov P_;
+  StateCov I_;
 };
 
 template<typename MeasurementModel, typename Measurement>
 void ExtendedKalmanFilter::update(MeasurementModel & m, const Measurement & z)
 {
-  m.updateJacobian(x_);
+  m.updateJacobians(x_);
 
   // compute innovation covariance
   MeasurementCov S = (m.H_ * P_ * m.H_.transpose()) + (m.V_ * m.R_ * m.V_.transpose());
@@ -55,13 +56,15 @@ void ExtendedKalmanFilter::update(MeasurementModel & m, const Measurement & z)
   x_ += K * (z - m.h(x_));
 
   // update covariance
-  P_ -= K * m.H_ * P_;
+  //P_ -= K * m.H_ * P_;
+  P_ = ((I_ - K * m.H_) * P_ * (I_ - K * m.H_).transpose()) +
+    (K * m.V_ * m.R_ * m.V_.transpose() * K.transpose());
 }
 
 template<typename MeasurementModel, typename Measurement>
 double ExtendedKalmanFilter::mahalanobis(MeasurementModel & m, const Measurement & z)
 {
-  m.updateJacobian(x_);
+  m.updateJacobians(x_);
 
   // compute innovation covariance
   MeasurementCov S = (m.H_ * P_ * m.H_.transpose()) + (m.V_ * m.R_ * m.V_.transpose());

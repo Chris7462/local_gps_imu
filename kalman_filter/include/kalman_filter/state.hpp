@@ -20,9 +20,6 @@ public:
     ALPHA
   };
 
-  State() = default;
-  ~State() = default;
-
   inline double x() const {return (*this)[X];}
   inline double y() const {return (*this)[Y];}
   inline double theta() const {return (*this)[THETA];}

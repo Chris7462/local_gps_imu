@@ -49,9 +49,9 @@ TEST_F(GpsMeasurementModelTest, h_TC1)
   EXPECT_DOUBLE_EQ(measurement.y(), 1.0);
 }
 
-TEST_F(GpsMeasurementModelTest, updateJacobian_TC1)
+TEST_F(GpsMeasurementModelTest, updateJacobians_TC1)
 {
-  meas->updateJacobian(x);
+  meas->updateJacobians(x);
   EXPECT_DOUBLE_EQ(meas->H_(kalman::GpsMeasurement::X, kalman::State::X), 1.0);
   EXPECT_DOUBLE_EQ(meas->H_(kalman::GpsMeasurement::Y, kalman::State::Y), 1.0);
 

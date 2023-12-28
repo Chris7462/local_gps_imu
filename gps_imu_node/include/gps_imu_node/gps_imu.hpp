@@ -36,7 +36,8 @@ private:
 
   message_filters::Synchronizer<policy_t> sync_;
 
-  void sync_callback(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
+  void sync_callback(
+    const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
     const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg);
 };
 

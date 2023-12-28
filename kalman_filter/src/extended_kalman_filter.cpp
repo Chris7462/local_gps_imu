@@ -8,6 +8,7 @@ ExtendedKalmanFilter::ExtendedKalmanFilter()
 {
   x_.setZero();
   P_.setIdentity();
+  I_.setIdentity();
 }
 
 void ExtendedKalmanFilter::init(const State & x, const StateCov & P)
@@ -31,7 +32,7 @@ void ExtendedKalmanFilter::predict(SystemModel & s, const double dt)
 
 void ExtendedKalmanFilter::predict(SystemModel & s, const Control & u, const double dt)
 {
-  s.updateJacobian(x_, u, dt);
+  s.updateJacobians(x_, u, dt);
 
   // predict state
   x_ = s.f(x_, u, dt);

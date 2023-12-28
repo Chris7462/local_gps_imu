@@ -68,9 +68,9 @@ TEST_F(SystemModelTest, f_TC1)
   EXPECT_DOUBLE_EQ(state.alpha(), 1.0);
 }
 
-TEST_F(SystemModelTest, updateJacobian_TC1)
+TEST_F(SystemModelTest, updateJacobians_TC1)
 {
-  sys->updateJacobian(x, u, dt);
+  sys->updateJacobians(x, u, dt);
   EXPECT_DOUBLE_EQ(sys->F_(kalman::State::X, kalman::State::THETA), -0.091079438687371797);
   EXPECT_DOUBLE_EQ(sys->F_(kalman::State::X, kalman::State::NU), 0.049757104789172696);
   EXPECT_DOUBLE_EQ(sys->F_(kalman::State::X, kalman::State::OMEGA), -0.00455397193436859);

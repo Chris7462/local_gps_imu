@@ -36,7 +36,7 @@ State SystemModel::f(const State & x, const Control & u, const double dt) const
   return state;
 }
 
-void SystemModel::updateJacobian(const State & x, const Control & u, const double dt)
+void SystemModel::updateJacobians(const State & x, const Control & u, const double dt)
 {
   (void)u;  // not using control here. Just put this line to silence compile warning.
 

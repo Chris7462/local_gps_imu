@@ -26,43 +26,43 @@ namespace ekf_localizer
 
 class EkfLocalizer : public rclcpp::Node
 {
-  public:
-    EkfLocalizer();
-    ~EkfLocalizer() = default;
+public:
+  EkfLocalizer();
+  ~EkfLocalizer() = default;
 
-  private:
-    double freq_;
-    double dt_;
-    bool gps_init_;
+private:
+  double freq_;
+  double dt_;
+  bool gps_init_;
 
-    double alt_;  // for publish purpose
-    double pitch_;  // for publish purpose
-    double roll_; // for publish purpose
+  double alt_;  // for publish purpose
+  double pitch_;  // for publish purpose
+  double roll_; // for publish purpose
 
-    void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
-    void gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
+  void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
+  void gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
 
-    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
-    rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gps_sub_;
-    rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gps_sub_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
-    std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
-    tf2::Transform odom_base_link_trans_;
+  tf2::Transform odom_base_link_trans_;
 
-    std::queue<sensor_msgs::msg::Imu::SharedPtr> imu_buff_;
-    std::queue<sensor_msgs::msg::NavSatFix::SharedPtr> gps_buff_;
+  std::queue<sensor_msgs::msg::Imu::SharedPtr> imu_buff_;
+  std::queue<sensor_msgs::msg::NavSatFix::SharedPtr> gps_buff_;
 
-    GeographicLib::LocalCartesian geo_converter_;
+  GeographicLib::LocalCartesian geo_converter_;
 
-    std::mutex mtx_;
+  std::mutex mtx_;
 
-    void run_ekf();
+  void run_ekf();
 
-    kalman::SystemModel sys_;
-    kalman::ImuMeasurementModel imu_model_;
-    kalman::GpsMeasurementModel gps_model_;
-    kalman::ExtendedKalmanFilter ekf_;
+  kalman::SystemModel sys_;
+  kalman::ImuMeasurementModel imu_model_;
+  kalman::GpsMeasurementModel gps_model_;
+  kalman::ExtendedKalmanFilter ekf_;
 };
 
 } // namespace ekf_localizer

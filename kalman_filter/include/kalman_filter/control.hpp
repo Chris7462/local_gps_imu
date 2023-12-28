@@ -17,9 +17,6 @@ public:
     ALPHA
   };
 
-  Control() = default;
-  ~Control() = default;
-
   inline double omega() const {return (*this)[OMEGA];}
   inline double alpha() const {return (*this)[ALPHA];}
 

@@ -17,9 +17,6 @@ public:
     ALPHA
   };
 
-  ImuMeasurement() = default;
-  ~ImuMeasurement() = default;
-
   inline double theta() const {return (*this)[THETA];}
   inline double omega() const {return (*this)[OMEGA];}
   inline double alpha() const {return (*this)[ALPHA];}

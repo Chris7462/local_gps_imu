@@ -23,7 +23,7 @@ public:
 
   void setCovariance(const GpsMeasurementCov & R);
   GpsMeasurement h(const State & x) const;
-  void updateJacobian(const State & x);
+  void updateJacobians(const State & x);
 
   friend class kalman::ExtendedKalmanFilter;
 

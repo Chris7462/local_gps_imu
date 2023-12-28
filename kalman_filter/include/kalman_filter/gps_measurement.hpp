@@ -17,9 +17,6 @@ public:
     Y
   };
 
-  GpsMeasurement() = default;
-  ~GpsMeasurement() = default;
-
   inline double x() const {return (*this)[X];}
   inline double y() const {return (*this)[Y];}
 

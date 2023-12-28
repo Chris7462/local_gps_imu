@@ -26,7 +26,7 @@ ImuMeasurement ImuMeasurementModel::h(const State & x) const
   return measurement;
 }
 
-void ImuMeasurementModel::updateJacobian(const State & x)
+void ImuMeasurementModel::updateJacobians(const State & x)
 {
   (void)x;  // not using state. Just put this line to silence compiler warning.
 

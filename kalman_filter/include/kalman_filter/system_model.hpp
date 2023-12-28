@@ -23,7 +23,7 @@ public:
 
   void setCovariance(const SystemCov & Q);
   State f(const State & x, const Control & u, const double dt) const;
-  void updateJacobian(const State & x, const Control & u, const double dt);
+  void updateJacobians(const State & x, const Control & u, const double dt);
 
   friend class kalman::ExtendedKalmanFilter;
 
