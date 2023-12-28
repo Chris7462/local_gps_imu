@@ -24,7 +24,7 @@ public:
     zg << 1.1, 1.1;
 
     imu = std::make_unique<kalman::ImuMeasurementModel>();
-    zi << 1.5, 1.5;
+    zi << 1.5, 1.5, 1.5;
   }
 
   void TearDown() override
@@ -189,7 +189,7 @@ TEST_F(ExtendedKalmanFilterTest, ImuUpdate_TC1)
 
   EXPECT_DOUBLE_EQ(ekf->x_(kalman::State::X), 1.0);
   EXPECT_DOUBLE_EQ(ekf->x_(kalman::State::Y), 1.0);
-  EXPECT_DOUBLE_EQ(ekf->x_(kalman::State::THETA), 1.0);
+  EXPECT_DOUBLE_EQ(ekf->x_(kalman::State::THETA), 1.25);
   EXPECT_DOUBLE_EQ(ekf->x_(kalman::State::NU), 1.0);
   EXPECT_DOUBLE_EQ(ekf->x_(kalman::State::OMEGA), 1.25);
   EXPECT_DOUBLE_EQ(ekf->x_(kalman::State::ALPHA), 1.25);
@@ -210,7 +210,7 @@ TEST_F(ExtendedKalmanFilterTest, ImuUpdate_TC1)
 
   EXPECT_DOUBLE_EQ(ekf->P_(kalman::State::THETA, kalman::State::X), 0.0);
   EXPECT_DOUBLE_EQ(ekf->P_(kalman::State::THETA, kalman::State::Y), 0.0);
-  EXPECT_DOUBLE_EQ(ekf->P_(kalman::State::THETA, kalman::State::THETA), 1.0);
+  EXPECT_DOUBLE_EQ(ekf->P_(kalman::State::THETA, kalman::State::THETA), 0.5);
   EXPECT_DOUBLE_EQ(ekf->P_(kalman::State::THETA, kalman::State::NU), 0.0);
   EXPECT_DOUBLE_EQ(ekf->P_(kalman::State::THETA, kalman::State::OMEGA), 0.0);
   EXPECT_DOUBLE_EQ(ekf->P_(kalman::State::THETA, kalman::State::ALPHA), 0.0);

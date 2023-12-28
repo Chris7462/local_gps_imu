@@ -30,14 +30,15 @@ TEST_F(ImuMeasurementModelTest, Contructor_TC1)
 TEST_F(ImuMeasurementModelTest, setCovariance_TC1)
 {
   kalman::ImuMeasurementCov R = kalman::ImuMeasurementCov::Zero();
-  R.diagonal() << 1.0, 2.0;
+  R.diagonal() << 1.0, 2.0, 3.0;
   meas->setCovariance(R);
 
   EXPECT_EQ(meas->R_.rows(), kalman::ImuMeasurementSize);
   EXPECT_EQ(meas->R_.cols(), kalman::ImuMeasurementSize);
   EXPECT_TRUE(meas->R_.isDiagonal());
-  EXPECT_DOUBLE_EQ(meas->R_(kalman::ImuMeasurement::OMEGA, kalman::ImuMeasurement::OMEGA), 1.0);
-  EXPECT_DOUBLE_EQ(meas->R_(kalman::ImuMeasurement::ALPHA, kalman::ImuMeasurement::ALPHA), 2.0);
+  EXPECT_DOUBLE_EQ(meas->R_(kalman::ImuMeasurement::THETA, kalman::ImuMeasurement::THETA), 1.0);
+  EXPECT_DOUBLE_EQ(meas->R_(kalman::ImuMeasurement::OMEGA, kalman::ImuMeasurement::OMEGA), 2.0);
+  EXPECT_DOUBLE_EQ(meas->R_(kalman::ImuMeasurement::ALPHA, kalman::ImuMeasurement::ALPHA), 3.0);
 }
 
 TEST_F(ImuMeasurementModelTest, h_TC1)
@@ -45,6 +46,7 @@ TEST_F(ImuMeasurementModelTest, h_TC1)
   kalman::ImuMeasurement measurement;
   measurement = meas->h(x);
 
+  EXPECT_DOUBLE_EQ(measurement.theta(), 1.0);
   EXPECT_DOUBLE_EQ(measurement.omega(), 1.0);
   EXPECT_DOUBLE_EQ(measurement.alpha(), 1.0);
 }
@@ -52,6 +54,7 @@ TEST_F(ImuMeasurementModelTest, h_TC1)
 TEST_F(ImuMeasurementModelTest, updateJacobian_TC1)
 {
   meas->updateJacobian(x);
+  EXPECT_DOUBLE_EQ(meas->H_(kalman::ImuMeasurement::THETA, kalman::State::THETA), 1.0);
   EXPECT_DOUBLE_EQ(meas->H_(kalman::ImuMeasurement::OMEGA, kalman::State::OMEGA), 1.0);
   EXPECT_DOUBLE_EQ(meas->H_(kalman::ImuMeasurement::ALPHA, kalman::State::ALPHA), 1.0);
 

@@ -24,9 +24,9 @@ The motion input is defined as:
 \]
 
 \section{The measurement $\bm{z}$}
-Suppose we have a GPS sensor and IMU sensor. The GPS sensor provides the longitudinal position $x$ and lateral position $y$. The IMU sensor provides yaw angle rate $\omega$, and linear acceleration $\alpha$. The measurement $\bm{z}$ is defined as:
+Suppose we have a GPS sensor and IMU sensor. The GPS sensor provides the longitudinal position $x$ and lateral position $y$. The IMU sensor provides yaw angle $\theta$, yaw angle rate $\omega$, and linear acceleration $\alpha$. The measurement $\bm{z}$ is defined as:
 \[
-  \bm{z} = [x, y, \omega, \alpha]^{T}
+  \bm{z} = [x, y, \theta, \omega, \alpha]^{T}
 \]
 
 \section{State transition function $\bm{f}$ and its derivative}
@@ -42,10 +42,10 @@ The 2-D kinematic equation for the vehicle state at time $t$, denoted as $\bm{x}
     \alpha_{t}
   \end{bmatrix}=
   \begin{bmatrix}
-    x_{t-1} + (\nu_{t-1}\Delta t + \frac{1}{2}\alpha_{t-1}\Delta t^2) \cos(\theta_{t-1}+\frac{1}{2}\omega_{t-1}\Delta t)\\
-    y_{t-1} + (\nu_{t-1}\Delta t + \frac{1}{2}\alpha_{t-1}\Delta t^2) \sin(\theta_{t-1}+\frac{1}{2}\omega_{t-1}\Delta t)\\
-    \theta_{t-1} + \omega_{t-1}\Delta t\\
-    \nu_{t-1} + \alpha_{t-1} \Delta t\\
+    x_{t-1} + (\nu_{t-1}\Delta t + \frac{1}{2}\alpha_{t-1}\Delta t^2) \cos(\theta_{t-1}+\frac{1}{2}\omega_{t-1}\Delta t) + \epsilon_{x}\\
+    y_{t-1} + (\nu_{t-1}\Delta t + \frac{1}{2}\alpha_{t-1}\Delta t^2) \sin(\theta_{t-1}+\frac{1}{2}\omega_{t-1}\Delta t) + \epsilon_{y}\\
+    \theta_{t-1} + \omega_{t-1}\Delta t + \epsilon_{\theta}\\
+    \nu_{t-1} + \alpha_{t-1} \Delta t + \epsilon_{\nu}\\
     \omega_{t-1}+\epsilon_{\omega}\\
     \alpha_{t-1}+\epsilon_{\alpha}
   \end{bmatrix}
@@ -54,7 +54,7 @@ We assume that the noises originate from the motion input. The above equation \e
 \[
   \bm{x}_{t} = \bm{f}(\bm{x}_{t-1}, \bm{u}_{t},\bm{\epsilon}_{t})
 \]
-Here, $\bm{\epsilon}_{t}=[0, 0, 0, 0, \epsilon_{\omega}, \epsilon_{\alpha}]^{T}$ represents the noise associated with the motion input $\bm{u}_{t}$. Additionally, the non-linear function $\bm{f}$ can be approximated using a Taylor expansion at the previously updated state $\bm{\mu}_{t-1}$, with $\bm{\epsilon}_{t}=\bm{0}$:
+Here, the vector $\bm{\epsilon}_{t}=[\epsilon_{x}, \epsilon_{y}, \epsilon_{\theta}, \epsilon_{\nu}, \epsilon_{\omega}, \epsilon_{\alpha}]^{T}$ represents the system noise. We make the assumption that $\epsilon_{x}$, $\epsilon_{y}$, $\epsilon_{\theta}$, and $\epsilon_{\nu}$ are all set to zero, ensuring that $\bm{\epsilon}_{t}$ is solely associated with the motion input $\bm{u}_{t}$. Additionally, the non-linear function $\bm{f}$ can be approximated using a Taylor expansion at the previously updated state $\bm{\mu}_{t-1}$, with $\bm{\epsilon}_{t}=\bm{0}$:
 \[
   \bm{f}(\bm{x}_{t-1}, \bm{u}_{t}, \bm{\epsilon}_{t}) \approx \bm{f}(\bm{\mu}_{t-1}, \bm{u}_{t}, \bm{0})+\bm{F}_{t}(\bm{x}_{t-1}-\bm{\mu}_{t-1})+\bm{W}_{t}\bm{\epsilon}_{t}
 \]
@@ -100,19 +100,21 @@ Furthermore, $\bm{W}_{t}$ can be expressed in matrix form:
 \end{eqnarray*}
 %We will derive the process noise covariance $\bm{Q}_{t}$ in section \ref{sec:process_noise}.
 
-\section{Measurement transformation matrix $\bm{H}$}
+\section{Measurement function $\bm{h}$ and its derivative}
 The measurements of the system can be described by a linear relation between the state and the measurement at the current step $t$. This relation is expressed as:
 \begin{equation}
   \label{eq:measurement_model}
   \begin{bmatrix}
     z_{x}\\
     z_{y}\\
+    z_{\theta}\\
     z_{\omega}\\
     z_{\alpha}
   \end{bmatrix}=
   \begin{bmatrix}
     x_{t} + \delta_{x}\\
     y_{t} + \delta_{y}\\
+    \theta_{t} + \delta_{\theta}\\
     \omega_{t} + \delta_{\omega}\\
     \alpha_{t} + \delta_{\alpha}
   \end{bmatrix}
@@ -123,7 +125,7 @@ We assume that the measurements are associated with measurement noises, and the 
   \bm{z}_{t} = \bm{h}(\bm{x}_{t}, \bm{\delta}_{t})
 \]
 
-Here, $\bm{\delta}_{t}=[\delta_{x}, \delta_{y}, \delta_{\omega}, \delta_{\alpha}]^{T}$ represents the measurement error. We can apply the same technique to expend the function $\bm{h}$ at the previously predicted state $\bar{\bm{\mu}}_{t}$, with $\bm{\delta}_{t}=\bm{0}$:
+Here, $\bm{\delta}_{t}=[\delta_{x}, \delta_{y}, \delta_{\theta}, \delta_{\omega}, \delta_{\alpha}]^{T}$ represents the measurement error. We can apply the same technique to expend the function $\bm{h}$ at the previously predicted state $\bar{\bm{\mu}}_{t}$, with $\bm{\delta}_{t}=\bm{0}$:
 \[
   \bm{h}(\bm{x}_{t},\bm{\delta}_{t}) \approx \bm{h}(\bar{\bm{\mu}}_{t}, \bm{0}) + \bm{H}_{t}(\bm{x}_{t}-\bar{\bm{\mu}}_{t}) + \bm{V}_{t}\bm{\delta}_{t}
 \]
@@ -133,6 +135,7 @@ Here, $\bm{H}_{t}$ represents the derivative of the measurement function $\bm{h}
   & = & \begin{bmatrix}
     1 & 0 & 0 & 0 & 0 & 0\\
     0 & 1 & 0 & 0 & 0 & 0\\
+    0 & 0 & 1 & 0 & 0 & 0\\
     0 & 0 & 0 & 0 & 1 & 0\\
     0 & 0 & 0 & 0 & 0 & 1\\
   \end{bmatrix}.
@@ -141,10 +144,11 @@ In addition, $\bm{V}_{t}$ can be expressed in matrix form:
 \begin{eqnarray*}
   \bm{V}_{t} & = & \frac{\partial \bm{h}}{\partial \bm{\delta}}\\
   & = & \begin{bmatrix}
-    1 & 0 & 0 & 0\\
-    0 & 1 & 0 & 0\\
-    0 & 0 & 1 & 0\\
-    0 & 0 & 0 & 1
+    1 & 0 & 0 & 0 & 0\\
+    0 & 1 & 0 & 0 & 0\\
+    0 & 0 & 1 & 0 & 0\\
+    0 & 0 & 0 & 1 & 0\\
+    0 & 0 & 0 & 0 & 1
   \end{bmatrix}
 \end{eqnarray*}
 
@@ -170,13 +174,14 @@ Here, $\sigma_{\omega}$ and $\sigma_{\alpha}$ are the standard deviation of the 
 For the measurement error $\bm{\delta}_{t}$, we assume it follows a normal distribution with a mean of $\bm{0}$ and a covariance matrix of $\bm{R}_{t}$. Additionally, we assume that all measurement noises are independent. Consequently, we can disregard any interaction between them, resulting in the following diagonal covariance matrix:
 \[
   \bm{R}_{t} = \begin{bmatrix}
-    \tau_{x}^2 & 0 & 0 & 0\\
-    0 & \tau_{y}^2 & 0 & 0\\
-    0 & 0 & \tau_{\omega}^2 & 0\\
-    0 & 0 & 0 & \tau_{\alpha}^2\\
+    \tau_{x}^2 & 0 & 0 & 0 & 0\\
+    0 & \tau_{y}^2 & 0 & 0 & 0\\
+    0 & 0 &\tau_{\theta}^2 & 0 & 0\\
+    0 & 0 & 0 & \tau_{\omega}^2 & 0\\
+    0 & 0 & 0 & 0 & \tau_{\alpha}^2\\
   \end{bmatrix}.
 \]
-Here, $\tau_{x}$, $\tau_{y}$, $\tau_{\omega}$, and $\tau_{\alpha}$ represent the standard deviations of $x$, $y$, $\omega$, and $\alpha$, respectively.
+Here, $\tau_{x}$, $\tau_{y}$, $\tau_{\theta}$, $\tau_{\omega}$, and $\tau_{\alpha}$ represent the standard deviations of $x$, $y$, $\theta$, $\omega$, and $\alpha$, respectively.
 
 \section{Kalman filter algorithm}
 Now we are ready to implement extended Kalman filter (EKF) for the vehicle localization. Given the initial state $\bm{\mu}_{0}$ and state covariance $\bm{\Sigma}_{0}$, the EKF algorithm is summarized as follows:\\

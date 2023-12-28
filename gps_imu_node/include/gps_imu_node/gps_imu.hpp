@@ -9,9 +9,6 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <tf2_ros/transform_broadcaster.h>
 
-// Eigen header
-#include <Eigen/Core>
-
 // geographicLib header
 #include <GeographicLib/LocalCartesian.hpp>
 

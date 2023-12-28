@@ -18,12 +18,22 @@ public:
   ~ExtendedKalmanFilter() = default;
 
   void init(const State & x, const StateCov & P);
+  const State & getState() const;
 
   void predict(SystemModel & s, const double dt);
   void predict(SystemModel & s, const Control & u, const double dt);
 
   template<typename MeasurementModel, typename Measurement>
   void update(MeasurementModel & m, const Measurement & z);
+
+  template<typename MeasurementModel, typename Measurement>
+  double mahalanobis(MeasurementModel & m, const Measurement & z);
+
+  void wrapStateYaw();
+  double limitMeasurementYaw(const double offset);
+
+protected:
+  double wrap2pi(const double angle);
 
 private:
   State x_;
@@ -46,6 +56,17 @@ void ExtendedKalmanFilter::update(MeasurementModel & m, const Measurement & z)
 
   // update covariance
   P_ -= K * m.H_ * P_;
+}
+
+template<typename MeasurementModel, typename Measurement>
+double ExtendedKalmanFilter::mahalanobis(MeasurementModel & m, const Measurement & z)
+{
+  m.updateJacobian(x_);
+
+  // compute innovation covariance
+  MeasurementCov S = (m.H_ * P_ * m.H_.transpose()) + (m.V_ * m.R_ * m.V_.transpose());
+
+  return (z - m.h(x_)).transpose() * S.inverse() * (z - m.h(x_));
 }
 
 } // namespace kalman

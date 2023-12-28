@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(gps_imu_node)
+project(ekf_localizer)
 
 set(CMAKE_BUILD_TYPE "Release")
 
@@ -14,42 +14,46 @@ find_package(ament_cmake REQUIRED)
 # find_package(<dependency> REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(message_filters REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(kalman_filter REQUIRED)
 
 # system
 find_package(GeographicLib REQUIRED)
 
-add_executable(gps_imu_node
-  src/gps_imu.cpp
-  src/gps_imu_node.cpp)
+add_executable(ekf_localizer_node
+  src/ekf_localizer.cpp
+  src/ekf_localizer_node.cpp)
 
-target_include_directories(gps_imu_node
+target_include_directories(ekf_localizer_node
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
 
-ament_target_dependencies(gps_imu_node
+ament_target_dependencies(ekf_localizer_node
   PUBLIC
     rclcpp
     sensor_msgs
-    message_filters
     tf2_ros
     tf2
-    tf2_geometry_msgs)
+    tf2_geometry_msgs
+    kalman_filter)
 
-target_link_libraries(gps_imu_node
+target_link_libraries(ekf_localizer_node
   PUBLIC
-    GeographicLib)
+    GeographicLib
+)
 
-target_compile_features(gps_imu_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(ekf_localizer_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
-install(TARGETS gps_imu_node
+install(TARGETS ekf_localizer_node
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY params
   DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY rviz

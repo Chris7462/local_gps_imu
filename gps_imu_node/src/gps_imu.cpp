@@ -1,8 +1,6 @@
 // ROS header
-#include <tf2_eigen/tf2_eigen.hpp>
-
-// Eigen header
-#include <Eigen/Geometry>
+#include <tf2/utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 // local header
 #include "gps_imu_node/gps_imu.hpp"
@@ -37,18 +35,18 @@ void GpsImuNode::sync_callback(const sensor_msgs::msg::Imu::ConstSharedPtr imu_m
   // pose information from gps_msg
   double lat, lon, alt;
   geo_converter_.Forward(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude, lat, lon, alt);
-  Eigen::Vector3d pose(lat, lon, alt);
+  tf2::Vector3 pose(lat, lon, alt);
 
   // orientation information from imu_msg
-  Eigen::Quaterniond orientation;
+  tf2::Quaternion orientation;
   tf2::fromMsg(imu_msg->orientation, orientation);
 
   // publish tf msg
   geometry_msgs::msg::TransformStamped gps_imu_tf;
   gps_imu_tf.header.stamp = rclcpp::Node::now();
   gps_imu_tf.header.frame_id = "map";
-  gps_imu_tf.child_frame_id = "base_link";
-  gps_imu_tf.transform.translation = tf2::toMsg2(pose);
+  gps_imu_tf.child_frame_id = "oxts_link";
+  gps_imu_tf.transform.translation = tf2::toMsg(pose);
   gps_imu_tf.transform.rotation = tf2::toMsg(orientation);
 
   // Send the transformation

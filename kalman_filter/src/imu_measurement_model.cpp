@@ -19,6 +19,7 @@ void ImuMeasurementModel::setCovariance(const ImuMeasurementCov & R)
 ImuMeasurement ImuMeasurementModel::h(const State & x) const
 {
   ImuMeasurement measurement;
+  measurement.theta() = x.theta();
   measurement.omega() = x.omega();
   measurement.alpha() = x.alpha();
 
@@ -31,6 +32,7 @@ void ImuMeasurementModel::updateJacobian(const State & x)
 
   // H = dh/dx (Jacobian of measurement transition w.r.t the state)
   H_.setZero();
+  H_(ImuMeasurement::THETA, State::THETA) = 1.0;
   H_(ImuMeasurement::OMEGA, State::OMEGA) = 1.0;
   H_(ImuMeasurement::ALPHA, State::ALPHA) = 1.0;
 
