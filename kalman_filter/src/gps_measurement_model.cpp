@@ -6,14 +6,8 @@ namespace kalman
 
 GpsMeasurementModel::GpsMeasurementModel()
 {
-  H_ = GpsMeasurementJacobian::Zero();
-  V_ = GpsNoiseJacobian::Zero();
-  R_ = GpsMeasurementCov::Identity();
-}
-
-void GpsMeasurementModel::setCovariance(const GpsMeasurementCov & R)
-{
-  R_ = R;
+  H_.setZero();
+  V_.setIdentity();
 }
 
 GpsMeasurement GpsMeasurementModel::h(const State & x) const

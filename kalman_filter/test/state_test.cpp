@@ -1,26 +1,27 @@
 #include <gtest/gtest.h>
-#define private public
-#include "kalman_filter/state.hpp"
-#undef private
 
+#include "kalman_filter/state.hpp"
+
+
+using namespace kalman;
 
 class StateTest : public ::testing::Test
 {
 public:
   void SetUp() override
   {
-    state = std::make_unique<kalman::State>();
+    state = std::make_unique<State>();
   }
   void TearDown() override
   {
   }
 
-  std::unique_ptr<kalman::State> state;
+  std::unique_ptr<State> state;
 };
 
 TEST_F(StateTest, Contructor_TC1)
 {
-  EXPECT_EQ(state->size(), kalman::StateSize);
+  EXPECT_EQ(state->size(), 6);
 }
 
 TEST_F(StateTest, SetGet_TC1)

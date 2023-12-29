@@ -1,15 +1,14 @@
 #pragma once
 
-#include <Eigen/Dense>
+#include "kalman_filter/matrix.hpp"
 
 namespace kalman
 {
 
-constexpr int StateSize = 6;
-
-class State : public Eigen::Matrix<double, StateSize, 1>
+class State : public kalman::Vector<6>
 {
 public:
+  KALMAN_VECTOR(State, 6)
   enum : uint8_t
   {
     X,
@@ -34,7 +33,5 @@ public:
   inline double & omega() {return (*this)[OMEGA];}
   inline double & alpha() {return (*this)[ALPHA];}
 };
-
-using StateCov = Eigen::Matrix<double, StateSize, StateSize>;
 
 } // namespace kalman

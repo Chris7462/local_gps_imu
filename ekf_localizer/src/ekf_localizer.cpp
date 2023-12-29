@@ -10,9 +10,9 @@ namespace ekf_localizer
 {
 
 EkfLocalizer::EkfLocalizer()
-: Node("ekf_localizer_node"), freq_{40.0}, dt_{1.0 / freq_}, gps_init_{false},
-  alt_{0.0}, pitch_{0.0}, roll_{0.0}, odom_base_link_trans_(), imu_buff_(),
-  gps_buff_(), geo_converter_(), sys_(), imu_model_(), gps_model_(), ekf_()
+: Node("ekf_localizer_node"), freq_{40.0}, gps_init_{false}, alt_{0.0},
+  pitch_{0.0}, roll_{0.0}, odom_base_link_trans_(), imu_buff_(), gps_buff_(),
+  geo_converter_(), sys_(1.0 / freq_), imu_model_(), gps_model_(), ekf_()
 {
   declare_parameter("init.x", rclcpp::PARAMETER_DOUBLE_ARRAY);
   declare_parameter("init.P", rclcpp::PARAMETER_DOUBLE_ARRAY);
@@ -42,7 +42,7 @@ EkfLocalizer::EkfLocalizer()
     "kitti/nav_sat_fix", qos, std::bind(&EkfLocalizer::gps_callback, this, std::placeholders::_1));
 
   timer_ = this->create_wall_timer(
-    std::chrono::milliseconds(static_cast<int>(dt_ * 1000)),
+    std::chrono::milliseconds(static_cast<int>(1.0 / freq_ * 1000)),
     std::bind(&EkfLocalizer::run_ekf, this));
 
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -50,26 +50,28 @@ EkfLocalizer::EkfLocalizer()
   odom_base_link_trans_.setIdentity();
 
   // Init system model
-  kalman::SystemCov Q = kalman::SystemCov::Zero();
   double eps_x = get_parameter("eps.x").as_double();
   double eps_y = get_parameter("eps.y").as_double();
   double eps_theta = get_parameter("eps.theta").as_double();
   double eps_nu = get_parameter("eps.nu").as_double();
   double eps_omega = get_parameter("eps.omega").as_double();
   double eps_alpha = get_parameter("eps.alpha").as_double();
+  kalman::Covariance<kalman::State> Q;
+  Q.setZero();
   Q.diagonal() << eps_x, eps_y, eps_theta, eps_nu, eps_omega, eps_alpha;
   sys_.setCovariance(Q);
 
-  // Init ekf
+  // Init ekf state
   std::vector<double> vec_x = get_parameter("init.x").as_double_array();
   kalman::State init_x;
   std::copy(vec_x.begin(), vec_x.end(), init_x.data());
+  ekf_.init(init_x);
 
+  // Init ekf covariance
   std::vector<double> vec_P = get_parameter("init.P").as_double_array();
-  kalman::StateCov init_P;
+  kalman::Covariance<kalman::State> init_P;
   std::copy(vec_P.begin(), vec_P.end(), init_P.data());
-
-  ekf_.init(init_x, init_P);
+  ekf_.setCovariance(init_P);
 }
 
 void EkfLocalizer::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
@@ -88,7 +90,7 @@ void EkfLocalizer::run_ekf()
 {
   rclcpp::Time current_time = rclcpp::Node::now();
 
-  ekf_.predict(sys_, dt_);
+  ekf_.predict(sys_);
   ekf_.wrapStateYaw();
   auto s = ekf_.getState();
 
@@ -113,10 +115,12 @@ void EkfLocalizer::run_ekf()
       kalman::ImuMeasurement z;
       z << theta, omega, alpha;
 
-      kalman::ImuMeasurementCov R = kalman::ImuMeasurementCov::Zero();
+      // Set IMU measurement covariance
       double tau_theta = get_parameter("tau.theta").as_double();
       double tau_omega = get_parameter("tau.omega").as_double();
       double tau_alpha = get_parameter("tau.alpha").as_double();
+      kalman::Covariance<kalman::ImuMeasurement> R;
+      R.setZero();
       R.diagonal() << tau_theta, tau_omega, tau_alpha;
       imu_model_.setCovariance(R);
 
@@ -176,9 +180,11 @@ void EkfLocalizer::run_ekf()
       kalman::GpsMeasurement z;
       z << lat, lon;
 
-      kalman::GpsMeasurementCov R = kalman::GpsMeasurementCov::Zero();
+      // Set GPS measurement covariance
       // double tau_x = get_parameter("tau.x").as_double();
       // double tau_y = get_parameter("tau.y").as_double();
+      kalman::Covariance<kalman::GpsMeasurement> R;
+      R.setZero();
       R.diagonal() << msg->position_covariance.at(0), msg->position_covariance.at(4);
       gps_model_.setCovariance(R);
 

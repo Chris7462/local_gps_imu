@@ -32,7 +32,6 @@ public:
 
 private:
   double freq_;
-  double dt_;
   bool gps_init_;
 
   double alt_;  // for publish purpose

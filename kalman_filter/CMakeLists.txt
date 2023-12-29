@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.8)
 project(kalman_filter)
 
+set(CMAKE_BUILD_TYPE "Release")
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-O3 -Wall -Wextra -Wpedantic)
 endif()
 
 # find dependencies
@@ -59,9 +61,9 @@ if(BUILD_TESTING)
 
   set(test_sources
     state_test
-    control_test
-    gps_measurement_test
-    imu_measurement_test)
+    matrix_test
+    filter_base_test
+    standard_base_test)
 
   foreach(test_src ${test_sources})
     ament_add_gtest(${test_src}
@@ -79,7 +81,6 @@ if(BUILD_TESTING)
     system_model
     gps_measurement_model
     imu_measurement_model)
-    #extended_kalman_filter)
 
   foreach(test_src ${test_sources})
     ament_add_gtest(${test_src}_test

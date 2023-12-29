@@ -1,9 +1,8 @@
 #pragma once
 
-#include <Eigen/Dense>
-
+#include "kalman_filter/matrix.hpp"
 #include "kalman_filter/state.hpp"
-#include "kalman_filter/gps_measurement.hpp"
+#include "kalman_filter/standard_base.hpp"
 
 
 namespace kalman
@@ -11,26 +10,37 @@ namespace kalman
 
 class ExtendedKalmanFilter;
 
-using GpsMeasurementJacobian = Eigen::Matrix<double, GpsMeasurementSize, StateSize>;
-using GpsNoiseJacobian = Eigen::Matrix<double, GpsMeasurementSize, GpsMeasurementSize>;
-using GpsMeasurementCov = Eigen::Matrix<double, GpsMeasurementSize, GpsMeasurementSize>;
-
-class GpsMeasurementModel
+class GpsMeasurement : public kalman::Vector<2>
 {
+public:
+  KALMAN_VECTOR(GpsMeasurement, 2)
+  enum : uint8_t
+  {
+    X,
+    Y
+  };
+
+  inline double x() const {return (*this)[X];}
+  inline double y() const {return (*this)[Y];}
+
+  inline double & x() {return (*this)[X];}
+  inline double & y() {return (*this)[Y];}
+};
+
+class GpsMeasurementModel : public StandardBase<GpsMeasurement>
+{
+  friend class kalman::ExtendedKalmanFilter;
+
 public:
   GpsMeasurementModel();
   ~GpsMeasurementModel() = default;
 
-  void setCovariance(const GpsMeasurementCov & R);
   GpsMeasurement h(const State & x) const;
   void updateJacobians(const State & x);
 
-  friend class kalman::ExtendedKalmanFilter;
-
 private:
-  GpsMeasurementJacobian H_;
-  GpsNoiseJacobian V_;
-  GpsMeasurementCov R_;
+  Jacobian<GpsMeasurement, State> H_;
+  Jacobian<GpsMeasurement, GpsMeasurement> V_;
 };
 
 } // namespace kalman

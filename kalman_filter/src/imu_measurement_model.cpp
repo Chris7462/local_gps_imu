@@ -6,14 +6,8 @@ namespace kalman
 
 ImuMeasurementModel::ImuMeasurementModel()
 {
-  H_ = ImuMeasurementJacobian::Zero();
-  V_ = ImuNoiseJacobian::Zero();
-  R_ = ImuMeasurementCov::Identity();
-}
-
-void ImuMeasurementModel::setCovariance(const ImuMeasurementCov & R)
-{
-  R_ = R;
+  H_.setZero();
+  V_.setIdentity();
 }
 
 ImuMeasurement ImuMeasurementModel::h(const State & x) const

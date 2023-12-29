@@ -11,34 +11,23 @@ ExtendedKalmanFilter::ExtendedKalmanFilter()
   I_.setIdentity();
 }
 
-void ExtendedKalmanFilter::init(const State & x, const StateCov & P)
-{
-  x_ = x;
-  P_ = P;
-}
-
-const State & ExtendedKalmanFilter::getState() const
-{
-  return x_;
-}
-
-void ExtendedKalmanFilter::predict(SystemModel & s, const double dt)
+void ExtendedKalmanFilter::predict(SystemModel & s)
 {
   // predict without control
   Control u;
   u.setZero();
-  return predict(s, u, dt);
+  return predict(s, u);
 }
 
-void ExtendedKalmanFilter::predict(SystemModel & s, const Control & u, const double dt)
+void ExtendedKalmanFilter::predict(SystemModel & s, const Control & u)
 {
-  s.updateJacobians(x_, u, dt);
+  s.updateJacobians(x_, u);
 
   // predict state
-  x_ = s.f(x_, u, dt);
+  x_ = s.f(x_, u);
 
   // predict covariance
-  P_ = s.F_ * P_ * s.F_.transpose() + s.W_ * s.Q_ * s.W_.transpose();
+  P_ = s.F_ * P_ * s.F_.transpose() + s.W_ * s.getCovariance() * s.W_.transpose();
 }
 
 void ExtendedKalmanFilter::wrapStateYaw()

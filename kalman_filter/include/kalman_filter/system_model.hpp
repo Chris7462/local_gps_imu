@@ -1,9 +1,8 @@
 #pragma once
 
-#include <cmath>
-
+#include "kalman_filter/matrix.hpp"
 #include "kalman_filter/state.hpp"
-#include "kalman_filter/control.hpp"
+#include "kalman_filter/standard_base.hpp"
 
 
 namespace kalman
@@ -11,26 +10,38 @@ namespace kalman
 
 class ExtendedKalmanFilter;
 
-using StateJacobian = Eigen::Matrix<double, StateSize, StateSize>;
-using NoiseJacobian = Eigen::Matrix<double, StateSize, StateSize>;
-using SystemCov = Eigen::Matrix<double, StateSize, StateSize>;
-
-class SystemModel
+class Control : public kalman::Vector<2>
 {
 public:
-  SystemModel();
-  ~SystemModel() = default;
+  KALMAN_VECTOR(Control, 2)
+  enum : uint8_t
+  {
+    OMEGA,
+    ALPHA
+  };
 
-  void setCovariance(const SystemCov & Q);
-  State f(const State & x, const Control & u, const double dt) const;
-  void updateJacobians(const State & x, const Control & u, const double dt);
+  inline double omega() const {return (*this)[OMEGA];}
+  inline double alpha() const {return (*this)[ALPHA];}
 
+  inline double & omega() {return (*this)[OMEGA];}
+  inline double & alpha() {return (*this)[ALPHA];}
+};
+
+class SystemModel : public StandardBase<State>
+{
   friend class kalman::ExtendedKalmanFilter;
 
+public:
+  SystemModel(const double dt);
+  ~SystemModel() = default;
+
+  State f(const State & x, const Control & u) const;
+  void updateJacobians(const State & x, const Control & u);
+
 private:
-  StateJacobian F_;
-  NoiseJacobian W_;
-  SystemCov Q_;
+  double dt_;
+  Jacobian<State, State> F_;
+  Jacobian<State, State> W_;
 };
 
 } // namespace kalman
