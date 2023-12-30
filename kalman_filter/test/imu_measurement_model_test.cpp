@@ -55,6 +55,7 @@ public:
 
 TEST_F(ImuMeasurementModelTest, Contructor_TC1)
 {
+  EXPECT_DOUBLE_EQ(meas->threshold_, 7.814727903);
   EXPECT_TRUE(meas->H_.isZero());
   EXPECT_TRUE(meas->V_.isIdentity());
   EXPECT_TRUE(meas->getCovariance().isIdentity());

@@ -21,6 +21,3 @@ ekf_localizer_node:
       theta: 0.1
       omega: 0.05
       alpha: 0.1
-    qchisq:
-      imu: 7.814727903  # from chi-square table df=3, alpha=0.95
-      gps: 5.991464547  # from chi-square table df=2, alpha=0.95

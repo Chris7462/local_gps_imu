@@ -53,6 +53,7 @@ public:
 
 TEST_F(GpsMeasurementModelTest, Contructor_TC1)
 {
+  EXPECT_DOUBLE_EQ(meas->threshold_, 5.991464547);
   EXPECT_TRUE(meas->H_.isZero());
   EXPECT_TRUE(meas->V_.isIdentity());
   EXPECT_TRUE(meas->getCovariance().isIdentity());

@@ -39,6 +39,7 @@ public:
   void updateJacobians(const State & x);
 
 private:
+  double threshold_;
   Jacobian<GpsMeasurement, State> H_;
   Jacobian<GpsMeasurement, GpsMeasurement> V_;
 };

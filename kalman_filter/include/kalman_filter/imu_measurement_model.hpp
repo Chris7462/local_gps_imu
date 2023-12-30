@@ -42,6 +42,7 @@ public:
   void updateJacobians(const State & x);
 
 private:
+  double threshold_;
   Jacobian<ImuMeasurement, State> H_;
   Jacobian<ImuMeasurement, ImuMeasurement> V_;
 };

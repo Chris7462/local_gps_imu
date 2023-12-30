@@ -5,6 +5,7 @@ namespace kalman
 {
 
 ImuMeasurementModel::ImuMeasurementModel()
+: threshold_{7.814727903} // chi-square dist, 0.95 quantile with df = 3
 {
   H_.setZero();
   V_.setIdentity();

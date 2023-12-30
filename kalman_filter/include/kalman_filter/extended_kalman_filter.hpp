@@ -20,10 +20,10 @@ public:
   void predict(SystemModel & s, const Control & u);
 
   template<typename MeasurementModel, typename Measurement>
-  void update(MeasurementModel & m, const Measurement & z);
+  bool update(MeasurementModel & m, const Measurement & z);
 
-  template<typename MeasurementModel, typename Measurement>
-  double mahalanobis(MeasurementModel & m, const Measurement & z);
+  template<typename Measurement>
+  double mahalanobis(const Measurement & y, const Covariance<Measurement> & S_inv) const;
 
   void wrapStateYaw();
   double limitMeasurementYaw(const double offset);
@@ -36,36 +36,45 @@ private:
 };
 
 template<typename MeasurementModel, typename Measurement>
-void ExtendedKalmanFilter::update(MeasurementModel & m, const Measurement & z)
+bool ExtendedKalmanFilter::update(MeasurementModel & m, const Measurement & z)
 {
   m.updateJacobians(x_);
+
+  // compute innovation
+  Measurement y = z - m.h(x_);
 
   // compute innovation covariance
   Covariance<Measurement> S = (m.H_ * P_ * m.H_.transpose()) +
     (m.V_ * m.getCovariance() * m.V_.transpose());
 
-  // compute kalman gain
-  KalmanGain<State, Measurement> K = P_ * m.H_.transpose() * S.inverse();
+  // inverse of the innovation covariance
+  Covariance<Measurement> S_inv = S.inverse();
 
-  // update state estimate
-  x_ += K * (z - m.h(x_));
+  double dist = mahalanobis(y, S_inv);
 
-  // update covariance
-  //P_ -= K * m.H_ * P_;
-  P_ = ((I_ - K * m.H_) * P_ * (I_ - K * m.H_).transpose()) +
-    (K * m.V_ * m.getCovariance() * m.V_.transpose() * K.transpose());
+  if (dist < m.threshold_) {
+    // compute kalman gain
+    KalmanGain<State, Measurement> K = P_ * m.H_.transpose() * S_inv;
+
+    // update state estimate
+    x_ += K * y;
+
+    // update covariance
+    //P_ -= K * m.H_ * P_;
+    P_ = ((I_ - K * m.H_) * P_ * (I_ - K * m.H_).transpose()) +
+      (K * m.V_ * m.getCovariance() * m.V_.transpose() * K.transpose());
+
+    return true;
+  } else {
+    return false;
+  }
 }
 
-template<typename MeasurementModel, typename Measurement>
-double ExtendedKalmanFilter::mahalanobis(MeasurementModel & m, const Measurement & z)
+template<typename Measurement>
+double ExtendedKalmanFilter::mahalanobis(
+  const Measurement & y, const Covariance<Measurement> & S_inv) const
 {
-  m.updateJacobians(x_);
-
-  // compute innovation covariance
-  Covariance<Measurement> S = (m.H_ * P_ * m.H_.transpose()) +
-    (m.V_ * m.getCovariance() * m.V_.transpose());
-
-  return (z - m.h(x_)).transpose() * S.inverse() * (z - m.h(x_));
+  return y.transpose() * S_inv * y;
 }
 
 } // namespace kalman

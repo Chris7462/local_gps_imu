@@ -5,6 +5,7 @@ namespace kalman
 {
 
 GpsMeasurementModel::GpsMeasurementModel()
+: threshold_{5.991464547} // chi-square dist, 0.95 quantile with df = 2
 {
   H_.setZero();
   V_.setIdentity();

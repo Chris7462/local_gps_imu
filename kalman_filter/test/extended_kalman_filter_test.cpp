@@ -135,7 +135,7 @@ TEST_F(ExtendedKalmanFilterTest, GpsUpdate_TC1)
 {
   ekf->init(init_x);
   ekf->setCovariance(init_P);
-  ekf->update(*gps, zg);
+  EXPECT_TRUE(ekf->update(*gps, zg));
 
   EXPECT_DOUBLE_EQ(ekf->getState()(State::X), 1.05);
   EXPECT_DOUBLE_EQ(ekf->getState()(State::Y), 1.05);
@@ -187,11 +187,25 @@ TEST_F(ExtendedKalmanFilterTest, GpsUpdate_TC1)
   EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::ALPHA, State::ALPHA), 1.0);
 }
 
+TEST_F(ExtendedKalmanFilterTest, GpsUpdate_TC2)
+{
+  ekf->init(init_x);
+  ekf->setCovariance(init_P);
+
+  GpsMeasurementModel gps;
+  GpsMeasurement zg;
+  zg << 100.0, 100.0;
+
+  EXPECT_FALSE(ekf->update(gps, zg));
+  EXPECT_TRUE(ekf->getState().isOnes());
+  EXPECT_TRUE(ekf->getCovariance().isIdentity());
+}
+
 TEST_F(ExtendedKalmanFilterTest, ImuUpdate_TC1)
 {
   ekf->init(init_x);
   ekf->setCovariance(init_P);
-  ekf->update(*imu, zi);
+  EXPECT_TRUE(ekf->update(*imu, zi));
 
   EXPECT_DOUBLE_EQ(ekf->getState()(State::X), 1.0);
   EXPECT_DOUBLE_EQ(ekf->getState()(State::Y), 1.0);
@@ -241,4 +255,18 @@ TEST_F(ExtendedKalmanFilterTest, ImuUpdate_TC1)
   EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::ALPHA, State::NU), 0.0);
   EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::ALPHA, State::OMEGA), 0.0);
   EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::ALPHA, State::ALPHA), 0.5);
+}
+
+TEST_F(ExtendedKalmanFilterTest, ImuUpdate_TC2)
+{
+  ekf->init(init_x);
+  ekf->setCovariance(init_P);
+
+  ImuMeasurementModel imu;
+  ImuMeasurement zi;
+  zi << 100.0, 100.0, 100.0;
+
+  EXPECT_FALSE(ekf->update(imu, zi));
+  EXPECT_TRUE(ekf->getState().isOnes());
+  EXPECT_TRUE(ekf->getCovariance().isIdentity());
 }

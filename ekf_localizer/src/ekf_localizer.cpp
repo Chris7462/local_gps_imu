@@ -30,9 +30,6 @@ EkfLocalizer::EkfLocalizer()
   declare_parameter("tau.omega", rclcpp::PARAMETER_DOUBLE);
   declare_parameter("tau.alpha", rclcpp::PARAMETER_DOUBLE);
 
-  declare_parameter("qchisq.imu", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("qchisq.gps", rclcpp::PARAMETER_DOUBLE);
-
   rclcpp::QoS qos(10);
 
   imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
@@ -124,13 +121,8 @@ void EkfLocalizer::run_ekf()
       R.diagonal() << tau_theta, tau_omega, tau_alpha;
       imu_model_.setCovariance(R);
 
-      // if the masurement is okay to fuse?
-      double qchisq_imu = get_parameter("qchisq.imu").as_double();
-      if (ekf_.mahalanobis(imu_model_, z) > qchisq_imu) {
-        RCLCPP_INFO(
-          get_logger(), "Measurement IMU is over the threshold. Discard this measurement.");
-      } else {  // okay to fuse.
-        ekf_.update(imu_model_, z);
+      // check imu update successful?
+      if (ekf_.update(imu_model_, z)) {
         ekf_.wrapStateYaw();
 
         // publish to TF
@@ -151,6 +143,9 @@ void EkfLocalizer::run_ekf()
 
         // save the odom->base transform
         tf2::fromMsg(odom_base_link_tf.transform, odom_base_link_trans_);
+      } else {
+        RCLCPP_INFO(
+          get_logger(), "Measurement IMU is over the threshold. Discard this measurement.");
       }
     }
   }
@@ -188,14 +183,12 @@ void EkfLocalizer::run_ekf()
       R.diagonal() << msg->position_covariance.at(0), msg->position_covariance.at(4);
       gps_model_.setCovariance(R);
 
-      // if the masurement is okay to fuse?
-      double qchisq_gps = get_parameter("qchisq.gps").as_double();
-      if (ekf_.mahalanobis(gps_model_, z) > qchisq_gps) {
+      // check GPS update successful?
+      if (ekf_.update(gps_model_, z)) {
+        ekf_.wrapStateYaw();
+      } else {
         RCLCPP_INFO(
           get_logger(), "Measurement GPS is over the threshold. Discard this measurement.");
-      } else {
-        ekf_.update(gps_model_, z);
-        ekf_.wrapStateYaw();
       }
     }
   }
