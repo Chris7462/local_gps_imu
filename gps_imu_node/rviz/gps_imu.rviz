@@ -4,8 +4,8 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Global Options1
-        - /Status1
+        - /TF1/Frames1
+        - /TF1/Tree1
       Splitter Ratio: 0.5
     Tree Height: 773
   - Class: rviz_common/Selection
@@ -52,9 +52,9 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        base_link:
-          Value: true
         map:
+          Value: true
+        oxts_link:
           Value: true
       Marker Scale: 15
       Name: TF
@@ -63,7 +63,7 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          base_link:
+          oxts_link:
             {}
       Update Interval: 0
       Value: true
@@ -75,9 +75,9 @@ Visualization Manager:
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
-      Line Style: Lines
-      Line Width: 0.029999999329447746
-      Name: GpsImuFusedPath
+      Line Style: Billboards
+      Line Width: 0.07999999821186066
+      Name: GpsImuPath
       Offset:
         X: 0
         Y: 0
@@ -141,7 +141,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 52.54225158691406
+      Distance: 49.45101547241211
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -156,10 +156,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5103983879089355
-      Target Frame: base_link
+      Pitch: 0.39039847254753113
+      Target Frame: oxts_link
       Value: Orbit (rviz)
-      Yaw: 0.8953980803489685
+      Yaw: 5.898589134216309
     Saved: ~
 Window Geometry:
   Displays:

@@ -4,7 +4,6 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /TF1/Frames1
         - /TF1/Tree1
         - /GpsPath1/Topic1
         - /GpsPath1/Offset1
@@ -72,22 +71,22 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        camera0_link:
+        cam0_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        camera1_link:
+        cam1_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        camera2_link:
+        cam2_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        camera3_link:
+        cam3_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -101,7 +100,7 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        lidar_link:
+        velo_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -121,19 +120,17 @@ Visualization Manager:
         All Enabled: false
         base_link:
           Value: true
-        camera0_link:
+        cam0_link:
           Value: false
-        camera1_link:
+        cam1_link:
           Value: false
-        camera2_link:
+        cam2_link:
           Value: false
-        camera3_link:
+        cam3_link:
           Value: false
         gps_link:
           Value: false
         imu_link:
-          Value: false
-        lidar_link:
           Value: false
         map:
           Value: true
@@ -141,6 +138,8 @@ Visualization Manager:
           Value: true
         oxts_link:
           Value: true
+        velo_link:
+          Value: false
       Marker Scale: 10
       Name: TF
       Show Arrows: true
@@ -153,13 +152,13 @@ Visualization Manager:
               gps_link:
                 {}
               imu_link:
-                lidar_link:
-                  camera0_link:
-                    camera1_link:
+                velo_link:
+                  cam0_link:
+                    cam1_link:
                       {}
-                    camera2_link:
+                    cam2_link:
                       {}
-                    camera3_link:
+                    cam3_link:
                       {}
           oxts_link:
             {}
@@ -282,10 +281,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6253983378410339
+      Pitch: 0.4403984844684601
       Target Frame: base_link
       Value: Orbit (rviz)
-      Yaw: 5.7835798263549805
+      Yaw: 5.798580169677734
     Saved: ~
 Window Geometry:
   Displays:
