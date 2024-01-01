@@ -33,10 +33,10 @@ EkfLocalizer::EkfLocalizer()
   rclcpp::QoS qos(10);
 
   imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
-    "kitti/imu", qos, std::bind(&EkfLocalizer::imu_callback, this, std::placeholders::_1));
+    "kitti/oxts/imu", qos, std::bind(&EkfLocalizer::imu_callback, this, std::placeholders::_1));
 
   gps_sub_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
-    "kitti/nav_sat_fix", qos, std::bind(&EkfLocalizer::gps_callback, this, std::placeholders::_1));
+    "kitti/oxts/gps/fix", qos, std::bind(&EkfLocalizer::gps_callback, this, std::placeholders::_1));
 
   timer_ = this->create_wall_timer(
     std::chrono::milliseconds(static_cast<int>(1.0 / freq_ * 1000)),

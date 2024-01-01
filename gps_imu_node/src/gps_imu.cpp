@@ -16,8 +16,8 @@ GpsImuNode::GpsImuNode()
 
   // sync gps and imu msg
   auto rmw_qos_profile = qos.get_rmw_qos_profile();
-  sub_gps_.subscribe(this, "kitti/nav_sat_fix", rmw_qos_profile);
-  sub_imu_.subscribe(this, "kitti/imu", rmw_qos_profile);
+  sub_gps_.subscribe(this, "kitti/oxts/gps/fix", rmw_qos_profile);
+  sub_imu_.subscribe(this, "kitti/oxts/imu", rmw_qos_profile);
   sync_.registerCallback(&GpsImuNode::sync_callback, this);
 
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
