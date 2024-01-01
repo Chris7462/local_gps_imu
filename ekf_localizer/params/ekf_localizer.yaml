@@ -19,5 +19,6 @@ ekf_localizer_node:
       x: 0.0  # if your gps does not provide this value, you will have to set.
       y: 0.0  # if your gps does not provide this value, you will have to set.
       theta: 0.1
+      nu: 0.1
       omega: 0.05
       alpha: 0.1

@@ -74,7 +74,7 @@ template<typename Measurement>
 double ExtendedKalmanFilter::mahalanobis(
   const Measurement & y, const Covariance<Measurement> & S_inv) const
 {
-  return y.transpose() * S_inv * y;
+  return (y.transpose() * S_inv * y).value();
 }
 
 } // namespace kalman

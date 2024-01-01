@@ -12,7 +12,8 @@ namespace ekf_localizer
 EkfLocalizer::EkfLocalizer()
 : Node("ekf_localizer_node"), freq_{40.0}, gps_init_{false}, alt_{0.0},
   pitch_{0.0}, roll_{0.0}, odom_base_link_trans_(), imu_buff_(), gps_buff_(),
-  geo_converter_(), sys_(1.0 / freq_), imu_model_(), gps_model_(), ekf_()
+  vel_buff_(), geo_converter_(), sys_(1.0 / freq_), imu_model_(), gps_model_(),
+  vel_model_(), ekf_()
 {
   declare_parameter("init.x", rclcpp::PARAMETER_DOUBLE_ARRAY);
   declare_parameter("init.P", rclcpp::PARAMETER_DOUBLE_ARRAY);
@@ -27,6 +28,7 @@ EkfLocalizer::EkfLocalizer()
   declare_parameter("tau.x", rclcpp::PARAMETER_DOUBLE);
   declare_parameter("tau.y", rclcpp::PARAMETER_DOUBLE);
   declare_parameter("tau.theta", rclcpp::PARAMETER_DOUBLE);
+  declare_parameter("tau.nu", rclcpp::PARAMETER_DOUBLE);
   declare_parameter("tau.omega", rclcpp::PARAMETER_DOUBLE);
   declare_parameter("tau.alpha", rclcpp::PARAMETER_DOUBLE);
 
@@ -37,6 +39,9 @@ EkfLocalizer::EkfLocalizer()
 
   gps_sub_ = this->create_subscription<sensor_msgs::msg::NavSatFix>(
     "kitti/oxts/gps/fix", qos, std::bind(&EkfLocalizer::gps_callback, this, std::placeholders::_1));
+
+  vel_sub_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
+    "kitti/oxts/gps/vel", qos, std::bind(&EkfLocalizer::vel_callback, this, std::placeholders::_1));
 
   timer_ = this->create_wall_timer(
     std::chrono::milliseconds(static_cast<int>(1.0 / freq_ * 1000)),
@@ -81,6 +86,12 @@ void EkfLocalizer::gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg
 {
   std::lock_guard<std::mutex> lock(mtx_);
   gps_buff_.push(msg);
+}
+
+void EkfLocalizer::vel_callback(const geometry_msgs::msg::TwistStamped::SharedPtr msg)
+{
+  std::lock_guard<std::mutex> lock(mtx_);
+  vel_buff_.push(msg);
 }
 
 void EkfLocalizer::run_ekf()
@@ -210,6 +221,60 @@ void EkfLocalizer::run_ekf()
 
   // send the transformation
   tf_broadcaster_->sendTransform(map_odom_tf);
+
+  // Run velocity update
+  if (!vel_buff_.empty()) {
+    mtx_.lock();
+    if ((current_time - rclcpp::Time(vel_buff_.front()->header.stamp)).seconds() > 0.1) {  // time sync has problem
+      vel_buff_.pop();
+      RCLCPP_WARN(this->get_logger(), "Timestamp unaligned, please check your Velocity data.");
+      mtx_.unlock();
+    } else {
+      auto msg = vel_buff_.front();
+      vel_buff_.pop();
+      mtx_.unlock();
+
+      double nu = msg->twist.linear.x;
+
+      kalman::VelMeasurement z;
+      z << nu;
+
+      // Set Vel measurement covariance
+      double tau_nu = get_parameter("tau.theta").as_double();
+      kalman::Covariance<kalman::VelMeasurement> R;
+      R.setZero();
+      R.diagonal() << tau_nu;
+      vel_model_.setCovariance(R);
+
+      // check imu update successful?
+      if (ekf_.update(vel_model_, z)) {
+        ekf_.wrapStateYaw();
+
+        // publish to TF
+        tf2::Vector3 t_current(s.x(), s.y(), alt_);
+        tf2::Quaternion q_current;
+        q_current.setRPY(roll_, pitch_, s.theta());
+        q_current.normalize();
+
+        geometry_msgs::msg::TransformStamped odom_base_link_tf;
+        odom_base_link_tf.header.stamp = rclcpp::Node::now();
+        odom_base_link_tf.header.frame_id = "odom";
+        odom_base_link_tf.child_frame_id = "base_link";
+        odom_base_link_tf.transform.translation = tf2::toMsg(t_current);
+        odom_base_link_tf.transform.rotation = tf2::toMsg(q_current);
+
+        // send the transformation
+        tf_broadcaster_->sendTransform(odom_base_link_tf);
+
+        // save the odom->base transform
+        tf2::fromMsg(odom_base_link_tf.transform, odom_base_link_trans_);
+      } else {
+        RCLCPP_INFO(
+          get_logger(), "Measurement Velocity is over the threshold. Discard this measurement.");
+      }
+    }
+  }
+
 }
 
 }  // namespace ekf_localizer

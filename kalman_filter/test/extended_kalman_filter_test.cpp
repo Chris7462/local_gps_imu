@@ -6,6 +6,7 @@
 
 #include "kalman_filter/gps_measurement_model.hpp"
 #include "kalman_filter/imu_measurement_model.hpp"
+#include "kalman_filter/vel_measurement_model.hpp"
 
 
 using namespace kalman;
@@ -26,6 +27,9 @@ public:
 
     imu = std::make_unique<ImuMeasurementModel>();
     zi << 1.5, 1.5, 1.5;
+
+    vel = std::make_unique<VelMeasurementModel>();
+    zv << 1.5;
   }
 
   void TearDown() override
@@ -44,6 +48,9 @@ public:
 
   std::unique_ptr<ImuMeasurementModel> imu;
   ImuMeasurement zi;
+
+  std::unique_ptr<VelMeasurementModel> vel;
+  VelMeasurement zv;
 };
 
 TEST_F(ExtendedKalmanFilterTest, Contructor_TC1)
@@ -267,6 +274,76 @@ TEST_F(ExtendedKalmanFilterTest, ImuUpdate_TC2)
   zi << 100.0, 100.0, 100.0;
 
   EXPECT_FALSE(ekf->update(imu, zi));
+  EXPECT_TRUE(ekf->getState().isOnes());
+  EXPECT_TRUE(ekf->getCovariance().isIdentity());
+}
+
+TEST_F(ExtendedKalmanFilterTest, VelUpdate_TC1)
+{
+  ekf->init(init_x);
+  ekf->setCovariance(init_P);
+  EXPECT_TRUE(ekf->update(*vel, zv));
+
+  EXPECT_DOUBLE_EQ(ekf->getState()(State::X), 1.0);
+  EXPECT_DOUBLE_EQ(ekf->getState()(State::Y), 1.0);
+  EXPECT_DOUBLE_EQ(ekf->getState()(State::THETA), 1.0);
+  EXPECT_DOUBLE_EQ(ekf->getState()(State::NU), 1.25);
+  EXPECT_DOUBLE_EQ(ekf->getState()(State::OMEGA), 1.0);
+  EXPECT_DOUBLE_EQ(ekf->getState()(State::ALPHA), 1.0);
+
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::X, State::X), 1.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::X, State::Y), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::X, State::THETA), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::X, State::NU), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::X, State::OMEGA), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::X, State::ALPHA), 0.0);
+
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::Y, State::X), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::Y, State::Y), 1.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::Y, State::THETA), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::Y, State::NU), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::Y, State::OMEGA), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::Y, State::ALPHA), 0.0);
+
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::THETA, State::X), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::THETA, State::Y), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::THETA, State::THETA), 1.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::THETA, State::NU), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::THETA, State::OMEGA), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::THETA, State::ALPHA), 0.0);
+
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::NU, State::X), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::NU, State::Y), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::NU, State::THETA), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::NU, State::NU), 0.5);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::NU, State::OMEGA), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::NU, State::ALPHA), 0.0);
+
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::OMEGA, State::X), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::OMEGA, State::Y), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::OMEGA, State::THETA), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::OMEGA, State::NU), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::OMEGA, State::OMEGA), 1.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::OMEGA, State::ALPHA), 0.0);
+
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::ALPHA, State::X), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::ALPHA, State::Y), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::ALPHA, State::THETA), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::ALPHA, State::NU), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::ALPHA, State::OMEGA), 0.0);
+  EXPECT_DOUBLE_EQ(ekf->getCovariance()(State::ALPHA, State::ALPHA), 1.0);
+}
+
+TEST_F(ExtendedKalmanFilterTest, VelUpdate_TC2)
+{
+  ekf->init(init_x);
+  ekf->setCovariance(init_P);
+
+  VelMeasurementModel vel;
+  VelMeasurement zv;
+  zv << 100.0;
+
+  EXPECT_FALSE(ekf->update(vel, zv));
   EXPECT_TRUE(ekf->getState().isOnes());
   EXPECT_TRUE(ekf->getCovariance().isIdentity());
 }

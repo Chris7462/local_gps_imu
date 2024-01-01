@@ -18,6 +18,7 @@ add_library(kalman_filter SHARED
   src/extended_kalman_filter.cpp
   src/gps_measurement_model.cpp
   src/imu_measurement_model.cpp
+  src/vel_measurement_model.cpp
   src/system_model.cpp)
 
 target_include_directories(kalman_filter
@@ -80,7 +81,8 @@ if(BUILD_TESTING)
   set(test_sources
     system_model
     gps_measurement_model
-    imu_measurement_model)
+    imu_measurement_model
+    vel_measurement_model)
 
   foreach(test_src ${test_sources})
     ament_add_gtest(${test_src}_test
@@ -100,7 +102,8 @@ if(BUILD_TESTING)
     src/extended_kalman_filter.cpp
     src/system_model.cpp
     src/gps_measurement_model.cpp
-    src/imu_measurement_model.cpp)
+    src/imu_measurement_model.cpp
+    src/vel_measurement_model.cpp)
 
   target_include_directories(extended_kalman_filter_test PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
