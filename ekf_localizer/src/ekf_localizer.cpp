@@ -52,20 +52,23 @@ EkfLocalizer::EkfLocalizer()
   double tau_theta = declare_parameter("tau.theta", 0.0);
   double tau_omega = declare_parameter("tau.omega", 0.0);
   double tau_alpha = declare_parameter("tau.alpha", 0.0);
-  kalman::Covariance<kalman::ImuMeasurement> RI = kalman::Covariance<kalman::ImuMeasurement>::Zero();
+  kalman::Covariance<kalman::ImuMeasurement> RI =
+    kalman::Covariance<kalman::ImuMeasurement>::Zero();
   RI.diagonal() << tau_theta, tau_omega, tau_alpha;
   imu_model_.setCovariance(RI);
 
   // Set GPS measurement covariance
   double tau_x = declare_parameter("tau.x", 0.0);
   double tau_y = declare_parameter("tau.y", 0.0);
-  kalman::Covariance<kalman::GpsMeasurement> RG = kalman::Covariance<kalman::GpsMeasurement>::Zero();
+  kalman::Covariance<kalman::GpsMeasurement> RG =
+    kalman::Covariance<kalman::GpsMeasurement>::Zero();
   RG.diagonal() << tau_x, tau_y;
   gps_model_.setCovariance(RG);
 
   // Set Vel measurement covariance
   double tau_nu = declare_parameter("tau.nu", 0.0);
-  kalman::Covariance<kalman::VelMeasurement> RV = kalman::Covariance<kalman::VelMeasurement>::Zero();
+  kalman::Covariance<kalman::VelMeasurement> RV =
+    kalman::Covariance<kalman::VelMeasurement>::Zero();
   RV.diagonal() << tau_nu;
   vel_model_.setCovariance(RV);
 
@@ -178,7 +181,8 @@ void EkfLocalizer::run_ekf()
       geo_converter_.Forward(msg->latitude, msg->longitude, msg->altitude, z.x(), z.y(), alt_);
 
       // use the covariance that Gps provided.
-      kalman::Covariance<kalman::GpsMeasurement> R = kalman::Covariance<kalman::GpsMeasurement>::Zero();
+      kalman::Covariance<kalman::GpsMeasurement> R =
+        kalman::Covariance<kalman::GpsMeasurement>::Zero();
       R.diagonal() << msg->position_covariance.at(0), msg->position_covariance.at(4);
       gps_model_.setCovariance(R);
 
