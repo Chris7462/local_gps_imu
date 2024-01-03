@@ -43,7 +43,7 @@ public:
   using Base::ColsAtCompileTime;
   using Base::SizeAtCompileTime;
 
-  Vector(void)
+  Vector()
   : Matrix<N, 1>()
   {
   }

@@ -10,10 +10,12 @@ namespace kalman
 
 class ExtendedKalmanFilter;
 
-class VelMeasurement : public kalman::Vector<1>
+constexpr int VelMeasurementSize = 1;
+
+class VelMeasurement : public Vector<VelMeasurementSize>
 {
 public:
-  KALMAN_VECTOR(VelMeasurement, 1)
+  KALMAN_VECTOR(VelMeasurement, VelMeasurementSize)
   enum : uint8_t
   {
     NU
@@ -26,7 +28,7 @@ public:
 
 class VelMeasurementModel : public StandardBase<VelMeasurement>
 {
-  friend class kalman::ExtendedKalmanFilter;
+  friend class ExtendedKalmanFilter;
 
 public:
   VelMeasurementModel();

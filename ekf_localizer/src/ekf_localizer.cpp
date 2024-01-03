@@ -1,3 +1,6 @@
+// C++ header
+#include <chrono>
+
 // ROS header
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -15,23 +18,6 @@ EkfLocalizer::EkfLocalizer()
   vel_buff_(), geo_converter_(), sys_(1.0 / freq_), imu_model_(), gps_model_(),
   vel_model_(), ekf_()
 {
-  declare_parameter("init.x", rclcpp::PARAMETER_DOUBLE_ARRAY);
-  declare_parameter("init.P", rclcpp::PARAMETER_DOUBLE_ARRAY);
-
-  declare_parameter("eps.x", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("eps.y", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("eps.theta", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("eps.nu", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("eps.omega", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("eps.alpha", rclcpp::PARAMETER_DOUBLE);
-
-  declare_parameter("tau.x", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("tau.y", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("tau.theta", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("tau.nu", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("tau.omega", rclcpp::PARAMETER_DOUBLE);
-  declare_parameter("tau.alpha", rclcpp::PARAMETER_DOUBLE);
-
   rclcpp::QoS qos(10);
 
   imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
@@ -51,28 +37,46 @@ EkfLocalizer::EkfLocalizer()
 
   odom_base_link_trans_.setIdentity();
 
-  // Init system model
-  double eps_x = get_parameter("eps.x").as_double();
-  double eps_y = get_parameter("eps.y").as_double();
-  double eps_theta = get_parameter("eps.theta").as_double();
-  double eps_nu = get_parameter("eps.nu").as_double();
-  double eps_omega = get_parameter("eps.omega").as_double();
-  double eps_alpha = get_parameter("eps.alpha").as_double();
-  kalman::Covariance<kalman::State> Q;
-  Q.setZero();
+  // Set system model covariance
+  double eps_x = declare_parameter("eps.x", 0.0);
+  double eps_y = declare_parameter("eps.y", 0.0);
+  double eps_theta = declare_parameter("eps.theta", 0.0);
+  double eps_nu = declare_parameter("eps.nu", 0.0);
+  double eps_omega = declare_parameter("eps.omega", 0.0);
+  double eps_alpha = declare_parameter("eps.alpha", 0.0);
+  kalman::Covariance<kalman::State> Q = kalman::Covariance<kalman::State>::Zero();
   Q.diagonal() << eps_x, eps_y, eps_theta, eps_nu, eps_omega, eps_alpha;
   sys_.setCovariance(Q);
 
+  // Set IMU measurement covariance
+  double tau_theta = declare_parameter("tau.theta", 0.0);
+  double tau_omega = declare_parameter("tau.omega", 0.0);
+  double tau_alpha = declare_parameter("tau.alpha", 0.0);
+  kalman::Covariance<kalman::ImuMeasurement> RI = kalman::Covariance<kalman::ImuMeasurement>::Zero();
+  RI.diagonal() << tau_theta, tau_omega, tau_alpha;
+  imu_model_.setCovariance(RI);
+
+  // Set GPS measurement covariance
+  double tau_x = declare_parameter("tau.x", 0.0);
+  double tau_y = declare_parameter("tau.y", 0.0);
+  kalman::Covariance<kalman::GpsMeasurement> RG = kalman::Covariance<kalman::GpsMeasurement>::Zero();
+  RG.diagonal() << tau_x, tau_y;
+  gps_model_.setCovariance(RG);
+
+  // Set Vel measurement covariance
+  double tau_nu = declare_parameter("tau.nu", 0.0);
+  kalman::Covariance<kalman::VelMeasurement> RV = kalman::Covariance<kalman::VelMeasurement>::Zero();
+  RV.diagonal() << tau_nu;
+  vel_model_.setCovariance(RV);
+
   // Init ekf state
-  std::vector<double> vec_x = get_parameter("init.x").as_double_array();
-  kalman::State init_x;
-  std::copy(vec_x.begin(), vec_x.end(), init_x.data());
+  std::vector<double> vec_x = declare_parameter("init.x", std::vector<double>());
+  kalman::State init_x(vec_x.data());
   ekf_.init(init_x);
 
   // Init ekf covariance
-  std::vector<double> vec_P = get_parameter("init.P").as_double_array();
-  kalman::Covariance<kalman::State> init_P;
-  std::copy(vec_P.begin(), vec_P.end(), init_P.data());
+  std::vector<double> vec_P = declare_parameter("init.P", std::vector<double>());
+  kalman::Covariance<kalman::State> init_P(vec_P.data());
   ekf_.setCovariance(init_P);
 }
 
@@ -97,10 +101,11 @@ void EkfLocalizer::vel_callback(const geometry_msgs::msg::TwistStamped::SharedPt
 void EkfLocalizer::run_ekf()
 {
   rclcpp::Time current_time = rclcpp::Node::now();
+  auto s = ekf_.getState();
 
+  // Run predict
   ekf_.predict(sys_);
   ekf_.wrapStateYaw();
-  auto s = ekf_.getState();
 
   // Run imu update
   if (!imu_buff_.empty()) {
@@ -116,27 +121,17 @@ void EkfLocalizer::run_ekf()
 
       double yaw;
       tf2::getEulerYPR(msg->orientation, yaw, pitch_, roll_);
-      double theta = ekf_.limitMeasurementYaw(yaw);
-      double omega = msg->angular_velocity.z;
-      double alpha = msg->linear_acceleration.x;
 
       kalman::ImuMeasurement z;
-      z << theta, omega, alpha;
-
-      // Set IMU measurement covariance
-      double tau_theta = get_parameter("tau.theta").as_double();
-      double tau_omega = get_parameter("tau.omega").as_double();
-      double tau_alpha = get_parameter("tau.alpha").as_double();
-      kalman::Covariance<kalman::ImuMeasurement> R;
-      R.setZero();
-      R.diagonal() << tau_theta, tau_omega, tau_alpha;
-      imu_model_.setCovariance(R);
+      z.theta() = ekf_.limitMeasurementYaw(yaw);
+      z.omega() = msg->angular_velocity.z;
+      z.alpha() = msg->linear_acceleration.x;
 
       // check imu update successful?
       if (ekf_.update(imu_model_, z)) {
         ekf_.wrapStateYaw();
 
-        // publish to TF
+        // publish odom to base link TF
         tf2::Vector3 t_current(s.x(), s.y(), alt_);
         tf2::Quaternion q_current;
         q_current.setRPY(roll_, pitch_, s.theta());
@@ -173,24 +168,17 @@ void EkfLocalizer::run_ekf()
       gps_buff_.pop();
       mtx_.unlock();
 
-      if (!gps_init_) {
-        // use the first gps data as map (0,0,0)
+      if (!gps_init_) { // use the first gps data as map (0,0,0)
         geo_converter_.Reset(msg->latitude, msg->longitude, msg->altitude);
         gps_init_ = true;
       }
 
       // gps measurement
-      double lat, lon;
-      geo_converter_.Forward(msg->latitude, msg->longitude, msg->altitude, lat, lon, alt_);
-
       kalman::GpsMeasurement z;
-      z << lat, lon;
+      geo_converter_.Forward(msg->latitude, msg->longitude, msg->altitude, z.x(), z.y(), alt_);
 
-      // Set GPS measurement covariance
-      // double tau_x = get_parameter("tau.x").as_double();
-      // double tau_y = get_parameter("tau.y").as_double();
-      kalman::Covariance<kalman::GpsMeasurement> R;
-      R.setZero();
+      // use the covariance that Gps provided.
+      kalman::Covariance<kalman::GpsMeasurement> R = kalman::Covariance<kalman::GpsMeasurement>::Zero();
       R.diagonal() << msg->position_covariance.at(0), msg->position_covariance.at(4);
       gps_model_.setCovariance(R);
 
@@ -204,6 +192,7 @@ void EkfLocalizer::run_ekf()
     }
   }
 
+  // publish map to odom TF
   tf2::Vector3 t_current(s.x(), s.y(), alt_);
   tf2::Quaternion q_current;
   q_current.setRPY(roll_, pitch_, s.theta());
@@ -234,23 +223,14 @@ void EkfLocalizer::run_ekf()
       vel_buff_.pop();
       mtx_.unlock();
 
-      double nu = msg->twist.linear.x;
-
       kalman::VelMeasurement z;
-      z << nu;
+      z.nu() = msg->twist.linear.x;
 
-      // Set Vel measurement covariance
-      double tau_nu = get_parameter("tau.theta").as_double();
-      kalman::Covariance<kalman::VelMeasurement> R;
-      R.setZero();
-      R.diagonal() << tau_nu;
-      vel_model_.setCovariance(R);
-
-      // check imu update successful?
+      // check velocity update successful?
       if (ekf_.update(vel_model_, z)) {
         ekf_.wrapStateYaw();
 
-        // publish to TF
+        // publish odom to base link TF
         tf2::Vector3 t_current(s.x(), s.y(), alt_);
         tf2::Quaternion q_current;
         q_current.setRPY(roll_, pitch_, s.theta());
@@ -274,7 +254,6 @@ void EkfLocalizer::run_ekf()
       }
     }
   }
-
 }
 
 }  // namespace ekf_localizer

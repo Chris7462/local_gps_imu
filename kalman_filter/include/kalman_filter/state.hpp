@@ -5,10 +5,12 @@
 namespace kalman
 {
 
-class State : public kalman::Vector<6>
+constexpr int StateSize = 6;
+
+class State : public Vector<StateSize>
 {
 public:
-  KALMAN_VECTOR(State, 6)
+  KALMAN_VECTOR(State, StateSize)
   enum : uint8_t
   {
     X,
@@ -18,6 +20,14 @@ public:
     OMEGA,
     ALPHA
   };
+
+  State(const double * data)
+  : Vector<StateSize>()
+  {
+    for (int i = 0; i < StateSize; ++i) {
+      (*this)[i] = data[i];
+    }
+  }
 
   inline double x() const {return (*this)[X];}
   inline double y() const {return (*this)[Y];}

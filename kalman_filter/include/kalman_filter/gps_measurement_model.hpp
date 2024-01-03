@@ -10,10 +10,12 @@ namespace kalman
 
 class ExtendedKalmanFilter;
 
-class GpsMeasurement : public kalman::Vector<2>
+constexpr int GpsMeasurementSize = 2;
+
+class GpsMeasurement : public Vector<GpsMeasurementSize>
 {
 public:
-  KALMAN_VECTOR(GpsMeasurement, 2)
+  KALMAN_VECTOR(GpsMeasurement, GpsMeasurementSize)
   enum : uint8_t
   {
     X,
@@ -29,7 +31,7 @@ public:
 
 class GpsMeasurementModel : public StandardBase<GpsMeasurement>
 {
-  friend class kalman::ExtendedKalmanFilter;
+  friend class ExtendedKalmanFilter;
 
 public:
   GpsMeasurementModel();

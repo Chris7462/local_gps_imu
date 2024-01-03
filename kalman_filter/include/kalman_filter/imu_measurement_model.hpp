@@ -10,10 +10,12 @@ namespace kalman
 
 class ExtendedKalmanFilter;
 
-class ImuMeasurement : public kalman::Vector<3>
+constexpr int ImuMeasurementSize = 3;
+
+class ImuMeasurement : public Vector<ImuMeasurementSize>
 {
 public:
-  KALMAN_VECTOR(ImuMeasurement, 3)
+  KALMAN_VECTOR(ImuMeasurement, ImuMeasurementSize)
   enum : uint8_t
   {
     THETA,
@@ -32,7 +34,7 @@ public:
 
 class ImuMeasurementModel : public StandardBase<ImuMeasurement>
 {
-  friend class kalman::ExtendedKalmanFilter;
+  friend class ExtendedKalmanFilter;
 
 public:
   ImuMeasurementModel();

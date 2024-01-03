@@ -3,6 +3,7 @@
 // C++ header
 #include <queue>
 #include <mutex>
+#include <memory>
 
 // ros header
 #include <rclcpp/rclcpp.hpp>
