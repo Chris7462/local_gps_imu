@@ -24,8 +24,13 @@ find_package(kalman_filter REQUIRED)
 find_package(GeographicLib REQUIRED)
 
 add_executable(ekf_localizer_node
+  src/ekf_localizer_node.cpp
   src/ekf_localizer.cpp
-  src/ekf_localizer_node.cpp)
+  src/system_model.cpp
+  src/gps_measurement_model.cpp
+  src/imu_measurement_model.cpp
+  src/vel_measurement_model.cpp
+  src/extended_kalman_filter.cpp)
 
 target_include_directories(ekf_localizer_node
   PUBLIC
@@ -71,6 +76,47 @@ if(BUILD_TESTING)
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+
+  set(test_sources
+    system_model
+    gps_measurement_model
+    imu_measurement_model
+    vel_measurement_model)
+
+  foreach(test_src ${test_sources})
+    ament_add_gtest(${test_src}_test
+      test/${test_src}_test.cpp
+      src/${test_src}.cpp)
+
+    target_include_directories(${test_src}_test PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:include>)
+
+    ament_target_dependencies(${test_src}_test
+      kalman_filter)
+
+    target_link_libraries(${test_src}_test gtest_main)
+  endforeach()
+
+  ament_add_gtest(extended_kalman_filter_test
+    test/extended_kalman_filter_test.cpp
+    src/system_model.cpp
+    src/gps_measurement_model.cpp
+    src/imu_measurement_model.cpp
+    src/vel_measurement_model.cpp
+    src/extended_kalman_filter.cpp)
+
+  target_include_directories(extended_kalman_filter_test PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
+
+  ament_target_dependencies(extended_kalman_filter_test
+    kalman_filter)
+
+  target_link_libraries(extended_kalman_filter_test gtest_main)
+
 endif()
 
 ament_package()

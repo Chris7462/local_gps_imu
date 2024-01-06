@@ -1,12 +1,12 @@
-#include "kalman_filter/gps_measurement_model.hpp"
+#include "ekf_localizer/gps_measurement_model.hpp"
 
 
-namespace kalman
+namespace ekf_localizer
 {
 
 GpsMeasurementModel::GpsMeasurementModel()
-: threshold_{5.991464547} // chi-square dist, 0.95 quantile with df = 2
 {
+  chisq_threshold_ = 5.991464547; // chi-square dist, 0.95 quantile with df = 2
   H_.setZero();
   V_.setIdentity();
 }
@@ -33,4 +33,4 @@ void GpsMeasurementModel::updateJacobians(const State & x)
   V_.setIdentity();
 }
 
-} // namespace kalman
+} // namespace ekf_localizer

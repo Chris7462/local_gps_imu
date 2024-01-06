@@ -1,11 +1,13 @@
 #include <gtest/gtest.h>
 
 #define private public
-#include "kalman_filter/vel_measurement_model.hpp"
+#define protected public
+#include "ekf_localizer/vel_measurement_model.hpp"
+#undef protected
 #undef private
 
 
-using namespace kalman;
+using namespace ekf_localizer;
 
 class VelMeasurementTest : public ::testing::Test
 {
@@ -51,7 +53,7 @@ public:
 
 TEST_F(VelMeasurementModelTest, Contructor_TC1)
 {
-  EXPECT_DOUBLE_EQ(meas->threshold_, 3.841458821);
+  EXPECT_DOUBLE_EQ(meas->chisq_threshold_, 3.841458821);
   EXPECT_TRUE(meas->H_.isZero());
   EXPECT_TRUE(meas->V_.isIdentity());
   EXPECT_TRUE(meas->getCovariance().isIdentity());
@@ -59,7 +61,7 @@ TEST_F(VelMeasurementModelTest, Contructor_TC1)
 
 TEST_F(VelMeasurementModelTest, setCovariance_TC1)
 {
-  Covariance<VelMeasurement> R;
+  kalman::Covariance<VelMeasurement> R;
   R.setZero();
   R.diagonal() << 1.0;
   meas->setCovariance(R);

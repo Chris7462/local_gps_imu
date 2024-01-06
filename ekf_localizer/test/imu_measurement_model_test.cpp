@@ -1,11 +1,13 @@
 #include <gtest/gtest.h>
 
 #define private public
-#include "kalman_filter/imu_measurement_model.hpp"
+#define protected public
+#include "ekf_localizer/imu_measurement_model.hpp"
+#undef protected
 #undef private
 
 
-using namespace kalman;
+using namespace ekf_localizer;
 
 class ImuMeasurementTest : public ::testing::Test
 {
@@ -55,7 +57,7 @@ public:
 
 TEST_F(ImuMeasurementModelTest, Contructor_TC1)
 {
-  EXPECT_DOUBLE_EQ(meas->threshold_, 7.814727903);
+  EXPECT_DOUBLE_EQ(meas->chisq_threshold_, 7.814727903);
   EXPECT_TRUE(meas->H_.isZero());
   EXPECT_TRUE(meas->V_.isIdentity());
   EXPECT_TRUE(meas->getCovariance().isIdentity());
@@ -63,7 +65,7 @@ TEST_F(ImuMeasurementModelTest, Contructor_TC1)
 
 TEST_F(ImuMeasurementModelTest, setCovariance_TC1)
 {
-  Covariance<ImuMeasurement> R;
+  kalman::Covariance<ImuMeasurement> R;
   R.setZero();
   R.diagonal() << 1.0, 2.0, 3.0;
   meas->setCovariance(R);

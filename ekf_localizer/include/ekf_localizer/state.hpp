@@ -2,12 +2,13 @@
 
 #include "kalman_filter/matrix.hpp"
 
-namespace kalman
+
+namespace ekf_localizer
 {
 
 constexpr int StateSize = 6;
 
-class State : public Vector<StateSize>
+class State : public kalman::Vector<StateSize>
 {
 public:
   KALMAN_VECTOR(State, StateSize)
@@ -44,4 +45,4 @@ public:
   inline double & alpha() {return (*this)[ALPHA];}
 };
 
-} // namespace kalman
+} // namespace ekf_localizer

@@ -1,12 +1,12 @@
-#include "kalman_filter/imu_measurement_model.hpp"
+#include "ekf_localizer/imu_measurement_model.hpp"
 
 
-namespace kalman
+namespace ekf_localizer
 {
 
 ImuMeasurementModel::ImuMeasurementModel()
-: threshold_{7.814727903} // chi-square dist, 0.95 quantile with df = 3
 {
+  chisq_threshold_ = 7.814727903; // chi-square dist, 0.95 quantile with df = 3
   H_.setZero();
   V_.setIdentity();
 }
@@ -35,4 +35,4 @@ void ImuMeasurementModel::updateJacobians(const State & x)
   V_.setIdentity();
 }
 
-} // namespace kalman
+} // namespace ekf_localizer

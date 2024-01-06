@@ -1,18 +1,15 @@
 #pragma once
 
-#include "kalman_filter/matrix.hpp"
-#include "kalman_filter/state.hpp"
-#include "kalman_filter/standard_base.hpp"
+#include "kalman_filter/linearized_measurement_model.hpp"
+#include "ekf_localizer/state.hpp"
 
 
-namespace kalman
+namespace ekf_localizer
 {
-
-class ExtendedKalmanFilter;
 
 constexpr int ImuMeasurementSize = 3;
 
-class ImuMeasurement : public Vector<ImuMeasurementSize>
+class ImuMeasurement : public kalman::Vector<ImuMeasurementSize>
 {
 public:
   KALMAN_VECTOR(ImuMeasurement, ImuMeasurementSize)
@@ -32,21 +29,15 @@ public:
   inline double & alpha() {return (*this)[ALPHA];}
 };
 
-class ImuMeasurementModel : public StandardBase<ImuMeasurement>
+class ImuMeasurementModel
+  : public kalman::LinearizedMeasurementModel<State, ImuMeasurement, kalman::StandardBase>
 {
-  friend class ExtendedKalmanFilter;
-
 public:
   ImuMeasurementModel();
   ~ImuMeasurementModel() = default;
 
   ImuMeasurement h(const State & x) const;
   void updateJacobians(const State & x);
-
-private:
-  double threshold_;
-  Jacobian<ImuMeasurement, State> H_;
-  Jacobian<ImuMeasurement, ImuMeasurement> V_;
 };
 
-} // namespace kalman
+} // namespace ekf_localizer

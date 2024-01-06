@@ -14,21 +14,16 @@ find_package(ament_cmake REQUIRED)
 # find_package(<dependency> REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-add_library(kalman_filter SHARED
-  src/extended_kalman_filter.cpp
-  src/gps_measurement_model.cpp
-  src/imu_measurement_model.cpp
-  src/vel_measurement_model.cpp
-  src/system_model.cpp)
+add_library(kalman_filter INTERFACE)
 
 target_include_directories(kalman_filter
-  PUBLIC
+  INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
     ${EIGEN3_INCLUDE_DIR})
 
 ament_target_dependencies(kalman_filter
-  PUBLIC
+  INTERFACE
     Eigen3)
 
 target_compile_features(kalman_filter INTERFACE c_std_99 cxx_std_17)  # Require C99 and C++17
@@ -61,10 +56,10 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
 
   set(test_sources
-    state_test
     matrix_test
     filter_base_test
-    standard_base_test)
+    standard_base_test
+    extended_kalman_filter_test)
 
   foreach(test_src ${test_sources})
     ament_add_gtest(${test_src}
@@ -77,40 +72,6 @@ if(BUILD_TESTING)
 
     target_link_libraries(${test_src} gtest_main)
   endforeach()
-
-  set(test_sources
-    system_model
-    gps_measurement_model
-    imu_measurement_model
-    vel_measurement_model)
-
-  foreach(test_src ${test_sources})
-    ament_add_gtest(${test_src}_test
-      test/${test_src}_test.cpp
-      src/${test_src}.cpp)
-
-    target_include_directories(${test_src}_test PRIVATE
-      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-      $<INSTALL_INTERFACE:include>
-      ${EIGEN3_INCLUDE_DIR})
-
-    target_link_libraries(${test_src}_test gtest_main)
-  endforeach()
-
-  ament_add_gtest(extended_kalman_filter_test
-    test/extended_kalman_filter_test.cpp
-    src/extended_kalman_filter.cpp
-    src/system_model.cpp
-    src/gps_measurement_model.cpp
-    src/imu_measurement_model.cpp
-    src/vel_measurement_model.cpp)
-
-  target_include_directories(extended_kalman_filter_test PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-    ${EIGEN3_INCLUDE_DIR})
-
-  target_link_libraries(extended_kalman_filter_test gtest_main)
 endif()
 
 ament_package()

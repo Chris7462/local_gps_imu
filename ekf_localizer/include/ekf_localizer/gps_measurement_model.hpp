@@ -1,18 +1,15 @@
 #pragma once
 
-#include "kalman_filter/matrix.hpp"
-#include "kalman_filter/state.hpp"
-#include "kalman_filter/standard_base.hpp"
+#include "kalman_filter/linearized_measurement_model.hpp"
+#include "ekf_localizer/state.hpp"
 
 
-namespace kalman
+namespace ekf_localizer
 {
-
-class ExtendedKalmanFilter;
 
 constexpr int GpsMeasurementSize = 2;
 
-class GpsMeasurement : public Vector<GpsMeasurementSize>
+class GpsMeasurement : public kalman::Vector<GpsMeasurementSize>
 {
 public:
   KALMAN_VECTOR(GpsMeasurement, GpsMeasurementSize)
@@ -29,21 +26,15 @@ public:
   inline double & y() {return (*this)[Y];}
 };
 
-class GpsMeasurementModel : public StandardBase<GpsMeasurement>
+class GpsMeasurementModel
+  : public kalman::LinearizedMeasurementModel<State, GpsMeasurement, kalman::StandardBase>
 {
-  friend class ExtendedKalmanFilter;
-
 public:
   GpsMeasurementModel();
   ~GpsMeasurementModel() = default;
 
   GpsMeasurement h(const State & x) const;
   void updateJacobians(const State & x);
-
-private:
-  double threshold_;
-  Jacobian<GpsMeasurement, State> H_;
-  Jacobian<GpsMeasurement, GpsMeasurement> V_;
 };
 
-} // namespace kalman
+} // namespace ekf_localizer

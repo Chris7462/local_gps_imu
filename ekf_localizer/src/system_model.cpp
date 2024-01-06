@@ -1,7 +1,8 @@
-#include "kalman_filter/system_model.hpp"
+#include "ekf_localizer/state.hpp"
+#include "ekf_localizer/system_model.hpp"
 
 
-namespace kalman
+namespace ekf_localizer
 {
 
 SystemModel::SystemModel(const double dt)
@@ -87,4 +88,4 @@ void SystemModel::updateJacobians(const State & x, const Control & u)
   W_(State::ALPHA, State::ALPHA) = 1.0;
 }
 
-} // namespace kalman
+} // namespace ekf_localizer

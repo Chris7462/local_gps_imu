@@ -44,7 +44,7 @@ EkfLocalizer::EkfLocalizer()
   double eps_nu = declare_parameter("eps.nu", 0.0);
   double eps_omega = declare_parameter("eps.omega", 0.0);
   double eps_alpha = declare_parameter("eps.alpha", 0.0);
-  kalman::Covariance<kalman::State> Q = kalman::Covariance<kalman::State>::Zero();
+  kalman::Covariance<State> Q = kalman::Covariance<State>::Zero();
   Q.diagonal() << eps_x, eps_y, eps_theta, eps_nu, eps_omega, eps_alpha;
   sys_.setCovariance(Q);
 
@@ -52,34 +52,31 @@ EkfLocalizer::EkfLocalizer()
   double tau_theta = declare_parameter("tau.theta", 0.0);
   double tau_omega = declare_parameter("tau.omega", 0.0);
   double tau_alpha = declare_parameter("tau.alpha", 0.0);
-  kalman::Covariance<kalman::ImuMeasurement> RI =
-    kalman::Covariance<kalman::ImuMeasurement>::Zero();
+  kalman::Covariance<ImuMeasurement> RI = kalman::Covariance<ImuMeasurement>::Zero();
   RI.diagonal() << tau_theta, tau_omega, tau_alpha;
   imu_model_.setCovariance(RI);
 
   // Set GPS measurement covariance
   double tau_x = declare_parameter("tau.x", 0.0);
   double tau_y = declare_parameter("tau.y", 0.0);
-  kalman::Covariance<kalman::GpsMeasurement> RG =
-    kalman::Covariance<kalman::GpsMeasurement>::Zero();
+  kalman::Covariance<GpsMeasurement> RG = kalman::Covariance<GpsMeasurement>::Zero();
   RG.diagonal() << tau_x, tau_y;
   gps_model_.setCovariance(RG);
 
   // Set Vel measurement covariance
   double tau_nu = declare_parameter("tau.nu", 0.0);
-  kalman::Covariance<kalman::VelMeasurement> RV =
-    kalman::Covariance<kalman::VelMeasurement>::Zero();
+  kalman::Covariance<VelMeasurement> RV = kalman::Covariance<VelMeasurement>::Zero();
   RV.diagonal() << tau_nu;
   vel_model_.setCovariance(RV);
 
   // Init ekf state
   std::vector<double> vec_x = declare_parameter("init.x", std::vector<double>());
-  kalman::State init_x(vec_x.data());
+  State init_x(vec_x.data());
   ekf_.init(init_x);
 
   // Init ekf covariance
   std::vector<double> vec_P = declare_parameter("init.P", std::vector<double>());
-  kalman::Covariance<kalman::State> init_P(vec_P.data());
+  kalman::Covariance<State> init_P(vec_P.data());
   ekf_.setCovariance(init_P);
 }
 
@@ -125,7 +122,7 @@ void EkfLocalizer::run_ekf()
       double yaw;
       tf2::getEulerYPR(msg->orientation, yaw, pitch_, roll_);
 
-      kalman::ImuMeasurement z;
+      ImuMeasurement z;
       z.theta() = ekf_.limitMeasurementYaw(yaw);
       z.omega() = msg->angular_velocity.z;
       z.alpha() = msg->linear_acceleration.x;
@@ -177,12 +174,11 @@ void EkfLocalizer::run_ekf()
       }
 
       // gps measurement
-      kalman::GpsMeasurement z;
+      GpsMeasurement z;
       geo_converter_.Forward(msg->latitude, msg->longitude, msg->altitude, z.x(), z.y(), alt_);
 
       // use the covariance that Gps provided.
-      kalman::Covariance<kalman::GpsMeasurement> R =
-        kalman::Covariance<kalman::GpsMeasurement>::Zero();
+      kalman::Covariance<GpsMeasurement> R = kalman::Covariance<GpsMeasurement>::Zero();
       R.diagonal() << msg->position_covariance.at(0), msg->position_covariance.at(4);
       gps_model_.setCovariance(R);
 
@@ -227,7 +223,7 @@ void EkfLocalizer::run_ekf()
       vel_buff_.pop();
       mtx_.unlock();
 
-      kalman::VelMeasurement z;
+      VelMeasurement z;
       z.nu() = msg->twist.linear.x;
 
       // check velocity update successful?

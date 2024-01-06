@@ -4,8 +4,6 @@
 #include "kalman_filter/filter_base.hpp"
 #undef protected
 
-#include "kalman_filter/matrix.hpp"
-
 
 using namespace kalman;
 
@@ -14,14 +12,14 @@ class FilterBaseTest : public ::testing::Test
 public:
   void SetUp() override
   {
-    state = std::make_unique<KFBv3>();
+    state = std::make_unique<FBv3>();
   }
   void TearDown() override
   {
   }
 
-  using KFBv3 = KalmanFilterBase<Vector<3>>;
-  std::unique_ptr<KFBv3> state;
+  using FBv3 = FilterBase<Vector<3>>;
+  std::unique_ptr<FBv3> state;
 };
 
 TEST_F(FilterBaseTest, Contructor_TC1)

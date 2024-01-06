@@ -1,11 +1,49 @@
 #include <gtest/gtest.h>
 
 #define private public
-#include "kalman_filter/system_model.hpp"
+#define protected public
+#include "ekf_localizer/system_model.hpp"
+#undef protected
 #undef private
 
 
-using namespace kalman;
+using namespace ekf_localizer;
+
+class StateTest : public ::testing::Test
+{
+public:
+  void SetUp() override
+  {
+    state = std::make_unique<State>();
+  }
+  void TearDown() override
+  {
+  }
+
+  std::unique_ptr<State> state;
+};
+
+TEST_F(StateTest, Contructor_TC1)
+{
+  EXPECT_EQ(state->size(), 6);
+}
+
+TEST_F(StateTest, SetGet_TC1)
+{
+  state->x() = 1.0;
+  state->y() = 2.0;
+  state->theta() = 3.0;
+  state->nu() = 4.0;
+  state->omega() = 5.0;
+  state->alpha() = 6.0;
+
+  EXPECT_DOUBLE_EQ(state->x(), 1.0);
+  EXPECT_DOUBLE_EQ(state->y(), 2.0);
+  EXPECT_DOUBLE_EQ(state->theta(), 3.0);
+  EXPECT_DOUBLE_EQ(state->nu(), 4.0);
+  EXPECT_DOUBLE_EQ(state->omega(), 5.0);
+  EXPECT_DOUBLE_EQ(state->alpha(), 6.0);
+}
 
 class ControlTest : public ::testing::Test
 {
@@ -35,7 +73,6 @@ TEST_F(ControlTest, SetGet_TC1)
   EXPECT_DOUBLE_EQ(control->alpha(), 2.0);
 }
 
-
 class SystemModelTest : public ::testing::Test
 {
 public:
@@ -64,7 +101,7 @@ TEST_F(SystemModelTest, Contructor_TC1)
 
 TEST_F(SystemModelTest, setCovariance_TC1)
 {
-  Covariance<State> Q;
+  kalman::Covariance<State> Q;
   Q.setZero();
   Q.diagonal() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
   sys->setCovariance(Q);

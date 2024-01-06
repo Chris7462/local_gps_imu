@@ -10,7 +10,7 @@
   using Base::ColsAtCompileTime; \
   using Base::SizeAtCompileTime; \
  \
-  NAME(void) \
+  NAME() \
     : kalman::Vector<N>() \
   { \
   } \
@@ -30,6 +30,8 @@
 
 namespace kalman
 {
+
+const int Dynamic = Eigen::Dynamic;
 
 template<int rows, int cols>
 using Matrix = Eigen::Matrix<double, rows, cols>;

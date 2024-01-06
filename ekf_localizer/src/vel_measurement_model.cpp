@@ -1,12 +1,12 @@
-#include "kalman_filter/vel_measurement_model.hpp"
+#include "ekf_localizer/vel_measurement_model.hpp"
 
 
-namespace kalman
+namespace ekf_localizer
 {
 
 VelMeasurementModel::VelMeasurementModel()
-: threshold_{3.841458821} // chi-square dist, 0.95 quantile with df = 1
 {
+  chisq_threshold_ = 3.841458821; // chi-square dist, 0.95 quantile with df = 1
   H_.setZero();
   V_.setIdentity();
 }
@@ -31,4 +31,4 @@ void VelMeasurementModel::updateJacobians(const State & x)
   V_.setIdentity();
 }
 
-} // namespace kalman
+} // namespace ekf_localizer

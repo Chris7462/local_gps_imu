@@ -4,8 +4,6 @@
 #include "kalman_filter/standard_base.hpp"
 #undef protected
 
-#include "kalman_filter/matrix.hpp"
-
 
 using namespace kalman;
 

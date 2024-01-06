@@ -1,11 +1,13 @@
 #include <gtest/gtest.h>
 
 #define private public
-#include "kalman_filter/gps_measurement_model.hpp"
+#define protected public
+#include "ekf_localizer/gps_measurement_model.hpp"
+#undef protected
 #undef private
 
 
-using namespace kalman;
+using namespace ekf_localizer;
 
 class GpsMeasurementTest : public ::testing::Test
 {
@@ -53,7 +55,7 @@ public:
 
 TEST_F(GpsMeasurementModelTest, Contructor_TC1)
 {
-  EXPECT_DOUBLE_EQ(meas->threshold_, 5.991464547);
+  EXPECT_DOUBLE_EQ(meas->chisq_threshold_, 5.991464547);
   EXPECT_TRUE(meas->H_.isZero());
   EXPECT_TRUE(meas->V_.isIdentity());
   EXPECT_TRUE(meas->getCovariance().isIdentity());
@@ -61,7 +63,7 @@ TEST_F(GpsMeasurementModelTest, Contructor_TC1)
 
 TEST_F(GpsMeasurementModelTest, setCovariance_TC1)
 {
-  Covariance<GpsMeasurement> R;
+  kalman::Covariance<GpsMeasurement> R;
   R.setZero();
   R.diagonal() << 1.0, 2.0;
   meas->setCovariance(R);

@@ -17,11 +17,11 @@
 #include <GeographicLib/LocalCartesian.hpp>
 
 // local header
-#include "kalman_filter/system_model.hpp"
-#include "kalman_filter/gps_measurement_model.hpp"
-#include "kalman_filter/imu_measurement_model.hpp"
-#include "kalman_filter/vel_measurement_model.hpp"
-#include "kalman_filter/extended_kalman_filter.hpp"
+#include "ekf_localizer/system_model.hpp"
+#include "ekf_localizer/gps_measurement_model.hpp"
+#include "ekf_localizer/imu_measurement_model.hpp"
+#include "ekf_localizer/vel_measurement_model.hpp"
+#include "ekf_localizer/extended_kalman_filter.hpp"
 
 
 namespace ekf_localizer
@@ -64,11 +64,11 @@ private:
 
   void run_ekf();
 
-  kalman::SystemModel sys_;
-  kalman::ImuMeasurementModel imu_model_;
-  kalman::GpsMeasurementModel gps_model_;
-  kalman::VelMeasurementModel vel_model_;
-  kalman::ExtendedKalmanFilter ekf_;
+  SystemModel sys_;
+  ImuMeasurementModel imu_model_;
+  GpsMeasurementModel gps_model_;
+  VelMeasurementModel vel_model_;
+  EKF ekf_;
 };
 
 } // namespace ekf_localizer

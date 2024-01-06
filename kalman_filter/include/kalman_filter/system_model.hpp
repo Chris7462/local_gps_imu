@@ -1,47 +1,31 @@
 #pragma once
 
 #include "kalman_filter/matrix.hpp"
-#include "kalman_filter/state.hpp"
 #include "kalman_filter/standard_base.hpp"
 
 
 namespace kalman
 {
 
-class ExtendedKalmanFilter;
-
-class Control : public kalman::Vector<2>
+template<typename StateType, typename ControlType = Vector<0>,
+  template<class> typename CovarianceBase = StandardBase>
+class SystemModel : public CovarianceBase<StateType>
 {
-public:
-  KALMAN_VECTOR(Control, 2)
-  enum : uint8_t
-  {
-    OMEGA,
-    ALPHA
-  };
-
-  inline double omega() const {return (*this)[OMEGA];}
-  inline double alpha() const {return (*this)[ALPHA];}
-
-  inline double & omega() {return (*this)[OMEGA];}
-  inline double & alpha() {return (*this)[ALPHA];}
-};
-
-class SystemModel : public StandardBase<State>
-{
-  friend class kalman::ExtendedKalmanFilter;
+  static_assert(
+    StateType::RowsAtCompileTime == Dynamic || StateType::RowsAtCompileTime > 0,
+    "State vector must contain at least 1 element or be dynamic");
+  static_assert(
+    ControlType::RowsAtCompileTime == Dynamic || ControlType::RowsAtCompileTime >= 0,
+    "Control vector must contain at least 0 elements or be dynamic");
 
 public:
-  SystemModel(const double dt);
-  ~SystemModel() = default;
+  using State = StateType;
+  using Control = ControlType;
+  virtual State f(const State & x, const Control & u) const = 0;
 
-  State f(const State & x, const Control & u) const;
-  void updateJacobians(const State & x, const Control & u);
-
-private:
-  double dt_;
-  Jacobian<State, State> F_;
-  Jacobian<State, State> W_;
+protected:
+  SystemModel() = default;
+  virtual ~SystemModel() = default;
 };
 
 } // namespace kalman
