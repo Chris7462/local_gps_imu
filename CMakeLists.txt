@@ -16,31 +16,32 @@ find_package(message_filters REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_eigen REQUIRED)
 
 # system
+find_package(Eigen3 REQUIRED)
 find_package(GeographicLib REQUIRED)
 
 add_executable(gps_imu_node
   src/gps_imu.cpp
   src/gps_imu_node.cpp)
 
-target_include_directories(gps_imu_node
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+target_include_directories(gps_imu_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${EIGEN3_INCLUDE_DIR})
 
-ament_target_dependencies(gps_imu_node
-  PUBLIC
-    rclcpp
-    sensor_msgs
-    message_filters
-    tf2_ros
-    tf2
-    tf2_geometry_msgs)
+ament_target_dependencies(gps_imu_node PUBLIC
+  rclcpp
+  sensor_msgs
+  message_filters
+  tf2_ros
+  tf2
+  tf2_geometry_msgs
+  tf2_eigen)
 
-target_link_libraries(gps_imu_node
-  PUBLIC
-    GeographicLib)
+target_link_libraries(gps_imu_node PUBLIC
+  GeographicLib)
 
 target_compile_features(gps_imu_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 

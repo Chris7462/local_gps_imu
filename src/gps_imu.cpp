@@ -1,6 +1,7 @@
 // ROS header
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
 
 // local header
 #include "gps_imu_node/gps_imu.hpp"
@@ -10,15 +11,21 @@ namespace gps_imu_node
 {
 
 GpsImuNode::GpsImuNode()
-: Node("gps_imu_node"), gps_init_(false), sync_(policy_t(10), sub_imu_, sub_gps_)
+: Node("gps_imu_node"), sync_(policy_t(10), sub_imu_, sub_gps_),
+  init_pose_inv_(Eigen::Isometry3d::Identity()), oxts_init_(false)
 {
   rclcpp::QoS qos(10);
 
   // sync gps and imu msg
   auto rmw_qos_profile = qos.get_rmw_qos_profile();
-  sub_gps_.subscribe(this, "kitti/oxts/gps/fix", rmw_qos_profile);
   sub_imu_.subscribe(this, "kitti/oxts/imu", rmw_qos_profile);
+  sub_gps_.subscribe(this, "kitti/oxts/gps/fix", rmw_qos_profile);
   sync_.registerCallback(&GpsImuNode::sync_callback, this);
+
+  pub_imu_ = create_publisher<sensor_msgs::msg::Imu>(
+    "kitti/oxts/imu_rotated", qos);
+  pub_gps_ = create_publisher<sensor_msgs::msg::NavSatFix>(
+    "kitti/oxts/gps_shifted", qos);
 
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 }
@@ -27,27 +34,45 @@ void GpsImuNode::sync_callback(
   const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
   const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg)
 {
-  if (!gps_init_) {
+  if (!oxts_init_) {
     // use the first gps point as map (0,0,0)
     geo_converter_.Reset(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude);
-    gps_init_ = true;
+    Eigen::Quaterniond init_orientation;
+    tf2::fromMsg(imu_msg->orientation, init_orientation);
+    init_pose_inv_.prerotate(init_orientation.inverse());
+    oxts_init_ = true;
   }
 
   // pose information from gps_msg
   double lat, lon, alt;
   geo_converter_.Forward(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude, lat, lon, alt);
-  tf2::Vector3 pose(lat, lon, alt);
 
-  // orientation information from imu_msg
-  tf2::Quaternion orientation;
+  // rotate the pose with init_orientation_
+  Eigen::Vector3d pose = init_pose_inv_ * Eigen::Vector3d(lat, lon, alt);
+
+  // rotate the orientation with init_orientation_inv_
+  Eigen::Quaterniond orientation;
   tf2::fromMsg(imu_msg->orientation, orientation);
+  orientation = (init_pose_inv_ * orientation).rotation();
+
+  // publish imu rotated
+  sensor_msgs::msg::Imu imu_rotated_msg = *imu_msg;
+  imu_rotated_msg.orientation = tf2::toMsg(orientation);
+  pub_imu_->publish(imu_rotated_msg);
+
+  // publish gps shifted
+  sensor_msgs::msg::NavSatFix gps_shifted_msg = *gps_msg;
+  gps_shifted_msg.latitude = lat;
+  gps_shifted_msg.longitude = lon;
+  gps_shifted_msg.altitude = alt;
+  pub_gps_->publish(gps_shifted_msg);
 
   // publish tf msg
   geometry_msgs::msg::TransformStamped gps_imu_tf;
   gps_imu_tf.header.stamp = rclcpp::Node::now();
   gps_imu_tf.header.frame_id = "map";
   gps_imu_tf.child_frame_id = "oxts_link";
-  gps_imu_tf.transform.translation = tf2::toMsg(pose);
+  gps_imu_tf.transform.translation = tf2::toMsg2(pose);
   gps_imu_tf.transform.rotation = tf2::toMsg(orientation);
 
   // Send the transformation
