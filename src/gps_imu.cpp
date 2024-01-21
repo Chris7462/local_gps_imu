@@ -34,20 +34,16 @@ void GpsImuNode::sync_callback(
   const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg)
 {
   if (!oxts_init_) {
-    // use the first gps point as map (0,0,0)
-    geo_converter_.Reset(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude);
+    // use the first quaternion as (0,0,0,0) for orientation
     Eigen::Quaterniond init_orientation;
     tf2::fromMsg(imu_msg->orientation, init_orientation);
     init_orientation_inv_ = init_orientation.inverse();
+
+    // use the first gps point as map (0,0,0)
+    geo_converter_.Reset(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude);
+
     oxts_init_ = true;
   }
-
-  // pose information from gps_msg
-  double lat, lon, alt;
-  geo_converter_.Forward(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude, lat, lon, alt);
-
-  // rotate the pose with init_orientation_
-  Eigen::Vector3d pose = init_orientation_inv_ * Eigen::Vector3d(lat, lon, alt);
 
   // rotate the orientation with init_orientation_inv_
   Eigen::Quaterniond orientation;
@@ -59,6 +55,13 @@ void GpsImuNode::sync_callback(
   imu_rotated_msg.orientation = tf2::toMsg(orientation);
   pub_imu_->publish(imu_rotated_msg);
 
+  // pose information from gps_msg
+  double lat, lon, alt;
+  geo_converter_.Forward(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude, lat, lon, alt);
+
+  // rotate the pose with init_orientation_
+  Eigen::Vector3d pose = init_orientation_inv_ * Eigen::Vector3d(lat, lon, alt);
+
   // publish gps shifted
   sensor_msgs::msg::NavSatFix gps_shifted_msg = *gps_msg;
   gps_shifted_msg.latitude = pose.x();
@@ -66,16 +69,16 @@ void GpsImuNode::sync_callback(
   gps_shifted_msg.altitude = pose.z();
   pub_gps_->publish(gps_shifted_msg);
 
-  // publish tf msg
-  geometry_msgs::msg::TransformStamped gps_imu_tf;
-  gps_imu_tf.header.stamp = rclcpp::Node::now();
-  gps_imu_tf.header.frame_id = "map";
-  gps_imu_tf.child_frame_id = "oxts_link";
-  gps_imu_tf.transform.translation = tf2::toMsg2(pose);
-  gps_imu_tf.transform.rotation = tf2::toMsg(orientation);
+  // publish oxts tf msg
+  geometry_msgs::msg::TransformStamped oxts_tf;
+  oxts_tf.header.stamp = rclcpp::Node::now();
+  oxts_tf.header.frame_id = "map";
+  oxts_tf.child_frame_id = "oxts_link";
+  oxts_tf.transform.translation = tf2::toMsg2(pose);
+  oxts_tf.transform.rotation = tf2::toMsg(orientation);
 
   // Send the transformation
-  tf_broadcaster_->sendTransform(gps_imu_tf);
+  tf_broadcaster_->sendTransform(oxts_tf);
 }
 
 }
