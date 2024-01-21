@@ -11,8 +11,7 @@ namespace gps_imu_node
 {
 
 GpsImuNode::GpsImuNode()
-: Node("gps_imu_node"), sync_(policy_t(10), sub_imu_, sub_gps_),
-  init_pose_inv_(Eigen::Isometry3d::Identity()), oxts_init_(false)
+: Node("gps_imu_node"), sync_(policy_t(10), sub_imu_, sub_gps_), oxts_init_(false)
 {
   rclcpp::QoS qos(10);
 
@@ -39,7 +38,7 @@ void GpsImuNode::sync_callback(
     geo_converter_.Reset(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude);
     Eigen::Quaterniond init_orientation;
     tf2::fromMsg(imu_msg->orientation, init_orientation);
-    init_pose_inv_.prerotate(init_orientation.inverse());
+    init_orientation_inv_ = init_orientation.inverse();
     oxts_init_ = true;
   }
 
@@ -48,12 +47,12 @@ void GpsImuNode::sync_callback(
   geo_converter_.Forward(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude, lat, lon, alt);
 
   // rotate the pose with init_orientation_
-  Eigen::Vector3d pose = init_pose_inv_ * Eigen::Vector3d(lat, lon, alt);
+  Eigen::Vector3d pose = init_orientation_inv_ * Eigen::Vector3d(lat, lon, alt);
 
   // rotate the orientation with init_orientation_inv_
   Eigen::Quaterniond orientation;
   tf2::fromMsg(imu_msg->orientation, orientation);
-  orientation = (init_pose_inv_ * orientation).rotation();
+  orientation = init_orientation_inv_ * orientation;
 
   // publish imu rotated
   sensor_msgs::msg::Imu imu_rotated_msg = *imu_msg;
@@ -62,9 +61,9 @@ void GpsImuNode::sync_callback(
 
   // publish gps shifted
   sensor_msgs::msg::NavSatFix gps_shifted_msg = *gps_msg;
-  gps_shifted_msg.latitude = lat;
-  gps_shifted_msg.longitude = lon;
-  gps_shifted_msg.altitude = alt;
+  gps_shifted_msg.latitude = pose.x();
+  gps_shifted_msg.longitude = pose.y();
+  gps_shifted_msg.altitude = pose.z();
   pub_gps_->publish(gps_shifted_msg);
 
   // publish tf msg

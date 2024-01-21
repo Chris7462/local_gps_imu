@@ -40,7 +40,7 @@ private:
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   GeographicLib::LocalCartesian geo_converter_;
-  Eigen::Isometry3d init_pose_inv_;
+  Eigen::Quaterniond init_orientation_inv_;
   bool oxts_init_;
 
   void sync_callback(
