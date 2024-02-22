@@ -3,6 +3,12 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    imu_rotate_node = Node(
+        package='gps_imu_node',
+        executable='imu_rotate_node',
+        name='imu_rotate_node'
+    )
+
     gps_imu_node = Node(
         package='gps_imu_node',
         executable='gps_imu_node',
@@ -23,6 +29,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        imu_rotate_node,
         gps_imu_node,
         trajectory_server_node
     ])
