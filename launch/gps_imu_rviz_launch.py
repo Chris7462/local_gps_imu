@@ -24,6 +24,19 @@ def generate_launch_description():
         ])
     )
 
+    trajectory_server_node = Node(
+        package='trajectory_server',
+        executable='trajectory_server_node',
+        name='trajectory_server_node',
+        namespace='oxts',
+        parameters=[{
+            'target_frame_name': 'map',
+            'source_frame_name': 'oxts_link',
+            'trajectory_update_rate': 10.0,
+            'trajectory_publish_rate': 10.0
+        }]
+    )
+
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
@@ -35,5 +48,6 @@ def generate_launch_description():
         SetParameter(name='use_sim_time', value=True),
         bag_exec,
         gps_imu_launch,
+        trajectory_server_node,
         rviz_node
     ])
