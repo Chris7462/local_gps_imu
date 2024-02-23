@@ -16,14 +16,14 @@
 #include <GeographicLib/LocalCartesian.hpp>
 
 
-namespace gps_imu_node
+namespace gps_shift_node
 {
 
-class GpsImuNode : public rclcpp::Node
+class GpsShiftNode : public rclcpp::Node
 {
 public:
-  GpsImuNode();
-  ~GpsImuNode() = default;
+  GpsShiftNode();
+  ~GpsShiftNode() = default;
 
 private:
   message_filters::Subscriber<sensor_msgs::msg::Imu> imu_sub_;
@@ -47,4 +47,4 @@ private:
     const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg);
 };
 
-} // namespace gps_imu_node
+} // namespace gps_shift_node

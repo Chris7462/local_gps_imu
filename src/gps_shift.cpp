@@ -4,14 +4,14 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 
 // local header
-#include "gps_imu_node/gps_imu.hpp"
+#include "gps_imu_node/gps_shift.hpp"
 
 
-namespace gps_imu_node
+namespace gps_shift_node
 {
 
-GpsImuNode::GpsImuNode()
-: Node("gps_imu_node"), sync_(policy_t(10), imu_sub_, gps_sub_), oxts_init_(false)
+GpsShiftNode::GpsShiftNode()
+: Node("gps_shift_node"), sync_(policy_t(10), imu_sub_, gps_sub_), oxts_init_(false)
 {
   rclcpp::QoS qos(10);
 
@@ -19,7 +19,7 @@ GpsImuNode::GpsImuNode()
   auto rmw_qos_profile = qos.get_rmw_qos_profile();
   imu_sub_.subscribe(this, "kitti/oxts/imu", rmw_qos_profile);
   gps_sub_.subscribe(this, "kitti/oxts/gps/fix", rmw_qos_profile);
-  sync_.registerCallback(&GpsImuNode::sync_callback, this);
+  sync_.registerCallback(&GpsShiftNode::sync_callback, this);
 
   pub_gps_ = create_publisher<sensor_msgs::msg::NavSatFix>(
     "kitti/oxts/gps_shifted", qos);
@@ -27,7 +27,7 @@ GpsImuNode::GpsImuNode()
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 }
 
-void GpsImuNode::sync_callback(
+void GpsShiftNode::sync_callback(
   const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
   const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg)
 {
@@ -65,7 +65,7 @@ void GpsImuNode::sync_callback(
   geometry_msgs::msg::TransformStamped oxts_tf;
   oxts_tf.header.stamp = gps_msg->header.stamp;
   oxts_tf.header.frame_id = "map";
-  oxts_tf.child_frame_id = "oxts_link";
+  oxts_tf.child_frame_id = "gps_link";
   oxts_tf.transform.translation = tf2::toMsg2(pose);
   oxts_tf.transform.rotation = tf2::toMsg(orientation);
 
@@ -73,4 +73,4 @@ void GpsImuNode::sync_callback(
   tf_broadcaster_->sendTransform(oxts_tf);
 }
 
-} // namespace gps_imu_node
+} // namespace gps_shift_node
