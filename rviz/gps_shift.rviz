@@ -93,7 +93,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /oxts/trajectory
+        Value: /gps/trajectory
       Value: true
   Enabled: true
   Global Options:

@@ -40,7 +40,7 @@ private:
 
   GeographicLib::LocalCartesian geo_converter_;
   Eigen::Quaterniond init_orientation_inv_;
-  bool oxts_init_;
+  bool gps_init_;
 
   void sync_callback(
     const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,

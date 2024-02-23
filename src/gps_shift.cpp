@@ -11,7 +11,7 @@ namespace gps_shift_node
 {
 
 GpsShiftNode::GpsShiftNode()
-: Node("gps_shift_node"), sync_(policy_t(10), imu_sub_, gps_sub_), oxts_init_(false)
+: Node("gps_shift_node"), sync_(policy_t(10), imu_sub_, gps_sub_), gps_init_(false)
 {
   rclcpp::QoS qos(10);
 
@@ -31,7 +31,7 @@ void GpsShiftNode::sync_callback(
   const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
   const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg)
 {
-  if (!oxts_init_) {
+  if (!gps_init_) {
     // use the first quaternion as (0,0,0,0) for orientation
     Eigen::Quaterniond init_orientation;
     tf2::fromMsg(imu_msg->orientation, init_orientation);
@@ -40,7 +40,7 @@ void GpsShiftNode::sync_callback(
     // use the first gps point as map (0,0,0)
     geo_converter_.Reset(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude);
 
-    oxts_init_ = true;
+    gps_init_ = true;
   }
 
   Eigen::Quaterniond orientation;

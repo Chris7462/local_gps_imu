@@ -28,7 +28,7 @@ def generate_launch_description():
         package='trajectory_server',
         executable='trajectory_server_node',
         name='trajectory_server_node',
-        namespace='oxts',
+        namespace='gps',
         parameters=[{
             'target_frame_name': 'map',
             'source_frame_name': 'gps_link',
