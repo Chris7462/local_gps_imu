@@ -16,36 +16,35 @@
 #include <GeographicLib/LocalCartesian.hpp>
 
 
-namespace gps_imu_node
+namespace gps_shift_node
 {
 
-class GpsImuNode : public rclcpp::Node
+class GpsShiftNode : public rclcpp::Node
 {
 public:
-  GpsImuNode();
-  ~GpsImuNode() = default;
+  GpsShiftNode();
+  ~GpsShiftNode() = default;
 
 private:
-  message_filters::Subscriber<sensor_msgs::msg::Imu> sub_imu_;
-  message_filters::Subscriber<sensor_msgs::msg::NavSatFix> sub_gps_;
+  message_filters::Subscriber<sensor_msgs::msg::Imu> imu_sub_;
+  message_filters::Subscriber<sensor_msgs::msg::NavSatFix> gps_sub_;
 
   using policy_t = message_filters::sync_policies::ApproximateTime<
     sensor_msgs::msg::Imu, sensor_msgs::msg::NavSatFix>;
 
   message_filters::Synchronizer<policy_t> sync_;
 
-  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_imu_;
   rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_gps_;
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   GeographicLib::LocalCartesian geo_converter_;
   Eigen::Quaterniond init_orientation_inv_;
-  bool oxts_init_;
+  bool gps_init_;
 
   void sync_callback(
     const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
     const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg);
 };
 
-}
+} // namespace gps_shift_node

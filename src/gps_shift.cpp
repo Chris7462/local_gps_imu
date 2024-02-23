@@ -4,36 +4,34 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 
 // local header
-#include "gps_imu_node/gps_imu.hpp"
+#include "gps_imu_node/gps_shift.hpp"
 
 
-namespace gps_imu_node
+namespace gps_shift_node
 {
 
-GpsImuNode::GpsImuNode()
-: Node("gps_imu_node"), sync_(policy_t(10), sub_imu_, sub_gps_), oxts_init_(false)
+GpsShiftNode::GpsShiftNode()
+: Node("gps_shift_node"), sync_(policy_t(10), imu_sub_, gps_sub_), gps_init_(false)
 {
   rclcpp::QoS qos(10);
 
   // sync gps and imu msg
   auto rmw_qos_profile = qos.get_rmw_qos_profile();
-  sub_imu_.subscribe(this, "kitti/oxts/imu", rmw_qos_profile);
-  sub_gps_.subscribe(this, "kitti/oxts/gps/fix", rmw_qos_profile);
-  sync_.registerCallback(&GpsImuNode::sync_callback, this);
+  imu_sub_.subscribe(this, "kitti/oxts/imu", rmw_qos_profile);
+  gps_sub_.subscribe(this, "kitti/oxts/gps/fix", rmw_qos_profile);
+  sync_.registerCallback(&GpsShiftNode::sync_callback, this);
 
-  pub_imu_ = create_publisher<sensor_msgs::msg::Imu>(
-    "kitti/oxts/imu_rotated", qos);
   pub_gps_ = create_publisher<sensor_msgs::msg::NavSatFix>(
     "kitti/oxts/gps_shifted", qos);
 
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 }
 
-void GpsImuNode::sync_callback(
+void GpsShiftNode::sync_callback(
   const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
   const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg)
 {
-  if (!oxts_init_) {
+  if (!gps_init_) {
     // use the first quaternion as (0,0,0,0) for orientation
     Eigen::Quaterniond init_orientation;
     tf2::fromMsg(imu_msg->orientation, init_orientation);
@@ -42,18 +40,12 @@ void GpsImuNode::sync_callback(
     // use the first gps point as map (0,0,0)
     geo_converter_.Reset(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude);
 
-    oxts_init_ = true;
+    gps_init_ = true;
   }
 
-  // rotate the orientation with init_orientation_inv_
   Eigen::Quaterniond orientation;
   tf2::fromMsg(imu_msg->orientation, orientation);
   orientation = init_orientation_inv_ * orientation;
-
-  // publish imu rotated
-  sensor_msgs::msg::Imu imu_rotated_msg = *imu_msg;
-  imu_rotated_msg.orientation = tf2::toMsg(orientation);
-  pub_imu_->publish(imu_rotated_msg);
 
   // pose information from gps_msg
   double lat, lon, alt;
@@ -81,4 +73,4 @@ void GpsImuNode::sync_callback(
   tf_broadcaster_->sendTransform(oxts_tf);
 }
 
-}
+} // namespace gps_shift_node

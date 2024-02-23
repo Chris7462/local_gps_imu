@@ -16,24 +16,38 @@ def generate_launch_description():
              '/data/kitti/raw/2011_09_29_drive_0071_sync_bag', '--clock']
     )
 
-    gps_imu_launch = IncludeLaunchDescription(
+    gps_shift_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
-                FindPackageShare('gps_imu_node'), 'launch', 'gps_imu_launch.py'
+                FindPackageShare('gps_imu_node'), 'launch', 'gps_shift_launch.py'
             ])
         ])
+    )
+
+    trajectory_server_node = Node(
+        package='trajectory_server',
+        executable='trajectory_server_node',
+        name='trajectory_server_node',
+        namespace='oxts',
+        parameters=[{
+            'target_frame_name': 'map',
+            'source_frame_name': 'oxts_link',
+            'trajectory_update_rate': 10.0,
+            'trajectory_publish_rate': 10.0
+        }]
     )
 
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        arguments=['-d', join(get_package_share_directory('gps_imu_node'), 'rviz', 'gps_imu.rviz')]
+        arguments=['-d', join(get_package_share_directory('gps_imu_node'), 'rviz', 'gps_shift.rviz')]
     )
 
     return LaunchDescription([
         SetParameter(name='use_sim_time', value=True),
         bag_exec,
-        gps_imu_launch,
+        gps_shift_launch,
+        trajectory_server_node,
         rviz_node
     ])
