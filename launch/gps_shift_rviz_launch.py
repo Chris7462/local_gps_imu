@@ -3,7 +3,7 @@ from os.path import join
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, IncludeLaunchDescription
+from launch.actions import ExecuteProcess, IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node, SetParameter
@@ -14,6 +14,13 @@ def generate_launch_description():
     bag_exec = ExecuteProcess(
         cmd=['ros2', 'bag', 'play', '-r', '1.0',
              '/data/kitti/raw/2011_09_29_drive_0071_sync_bag', '--clock']
+    )
+
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        arguments=['-d', join(get_package_share_directory('gps_imu_node'), 'rviz', 'gps_shift.rviz')]
     )
 
     gps_shift_launch = IncludeLaunchDescription(
@@ -37,17 +44,15 @@ def generate_launch_description():
         }]
     )
 
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        arguments=['-d', join(get_package_share_directory('gps_imu_node'), 'rviz', 'gps_shift.rviz')]
-    )
-
     return LaunchDescription([
         SetParameter(name='use_sim_time', value=True),
         bag_exec,
+        rviz_node,
         gps_shift_launch,
-        trajectory_server_node,
-        rviz_node
+        TimerAction(
+            period=1.0,  # delay these nodes for 1.0 seconds.
+            actions=[
+                trajectory_server_node
+            ]
+        )
     ])
