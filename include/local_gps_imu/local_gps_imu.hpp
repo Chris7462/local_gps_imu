@@ -7,12 +7,14 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
-#include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/transform_broadcaster.h>
 
 // geographicLib header
 #include <GeographicLib/LocalCartesian.hpp>
+
+// local created ROS message
+#include "kitti_msgs/msg/geo_plane_point.hpp"
 
 
 namespace local_gps_imu
@@ -33,7 +35,7 @@ private:
 
   message_filters::Synchronizer<policy_t> sync_;
 
-  rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr gps_pub_;
+  rclcpp::Publisher<kitti_msgs::msg::GeoPlanePoint>::SharedPtr gps_pub_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
