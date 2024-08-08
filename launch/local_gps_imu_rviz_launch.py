@@ -20,13 +20,13 @@ def generate_launch_description():
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        arguments=['-d', join(get_package_share_directory('gps_imu_node'), 'rviz', 'gps_shift.rviz')]
+        arguments=['-d', join(get_package_share_directory('local_gps_imu'), 'rviz', 'local_gps_imu.rviz')]
     )
 
-    gps_shift_launch = IncludeLaunchDescription(
+    local_gps_imu_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
-                FindPackageShare('gps_imu_node'), 'launch', 'gps_shift_launch.py'
+                FindPackageShare('local_gps_imu'), 'launch', 'local_gps_imu_launch.py'
             ])
         ])
     )
@@ -48,7 +48,7 @@ def generate_launch_description():
         SetParameter(name='use_sim_time', value=True),
         bag_exec,
         rviz_node,
-        gps_shift_launch,
+        local_gps_imu_launch,
         TimerAction(
             period=1.0,  # delay these nodes for 1.0 seconds.
             actions=[
