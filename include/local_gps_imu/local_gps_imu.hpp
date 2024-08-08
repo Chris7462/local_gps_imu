@@ -7,23 +7,22 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <geometry_msgs/msg/vector3_stamped.hpp>
+#include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/transform_broadcaster.h>
-
-// Eigen header
-#include <Eigen/Geometry>
 
 // geographicLib header
 #include <GeographicLib/LocalCartesian.hpp>
 
 
-namespace gps_shift_node
+namespace local_gps_imu
 {
 
-class GpsShiftNode : public rclcpp::Node
+class LocalGpsImu : public rclcpp::Node
 {
 public:
-  GpsShiftNode();
-  ~GpsShiftNode() = default;
+  LocalGpsImu();
+  ~LocalGpsImu() = default;
 
 private:
   message_filters::Subscriber<sensor_msgs::msg::Imu> imu_sub_;
@@ -34,17 +33,19 @@ private:
 
   message_filters::Synchronizer<policy_t> sync_;
 
-  rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr pub_gps_;
+  rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr gps_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   GeographicLib::LocalCartesian geo_converter_;
-  Eigen::Quaterniond init_orientation_inv_;
-  bool gps_init_;
+  bool init_;
+
+  tf2::Transform world_init_trans_;
 
   void sync_callback(
     const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
     const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg);
 };
 
-} // namespace gps_shift_node
+} // namespace local_gps_imu
