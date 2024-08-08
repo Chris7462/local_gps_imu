@@ -19,7 +19,7 @@ LocalGpsImu::LocalGpsImu()
   gps_sub_.subscribe(this, "kitti/oxts/gps/fix", rmw_qos_profile);
   sync_.registerCallback(&LocalGpsImu::sync_callback, this);
 
-  gps_pub_ = create_publisher<geometry_msgs::msg::Vector3Stamped>(
+  gps_pub_ = create_publisher<kitti_msgs::msg::GeoPlanePoint>(
     "kitti/oxts/gps_shifted", qos);
 
   imu_pub_ = create_publisher<sensor_msgs::msg::Imu>(
@@ -66,9 +66,10 @@ void LocalGpsImu::sync_callback(
   init_curr_trans.mult(world_init_trans_.inverse(), world_curr_trans);
 
   // publish shifted gps coordinate in the initial fixed frame
-  geometry_msgs::msg::Vector3Stamped gps_shifted_msg;
+  kitti_msgs::msg::GeoPlanePoint gps_shifted_msg;
   gps_shifted_msg.header = gps_msg->header;
-  gps_shifted_msg.vector = tf2::toMsg(init_curr_trans.getOrigin());
+  gps_shifted_msg.local_coordinate = tf2::toMsg(init_curr_trans.getOrigin());
+  gps_shifted_msg.position_covariance = gps_msg->position_covariance;
   gps_pub_->publish(gps_shifted_msg);
 
   // publish rotated imu orientation in the inital fixed frame

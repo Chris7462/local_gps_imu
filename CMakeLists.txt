@@ -21,6 +21,9 @@ find_package(tf2_geometry_msgs REQUIRED)
 # system
 find_package(GeographicLib REQUIRED)
 
+# local created package
+find_package(kitti_msgs REQUIRED)
+
 add_executable(local_gps_imu_node
   src/local_gps_imu_node.cpp
   src/local_gps_imu.cpp)
@@ -36,7 +39,8 @@ ament_target_dependencies(local_gps_imu_node PUBLIC
   geometry_msgs
   tf2
   tf2_ros
-  tf2_geometry_msgs)
+  tf2_geometry_msgs
+  kitti_msgs)
 
 target_link_libraries(local_gps_imu_node PUBLIC
   GeographicLib)
