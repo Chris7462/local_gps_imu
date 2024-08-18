@@ -1,6 +1,9 @@
 // ROS header
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+// geographicLib header
+#include <GeographicLib/UTMUPS.hpp>
+
 // local header
 #include "local_gps_imu/local_gps_imu.hpp"
 
@@ -25,68 +28,124 @@ LocalGpsImu::LocalGpsImu()
   imu_pub_ = create_publisher<sensor_msgs::msg::Imu>(
     "kitti/oxts/imu_rotated", qos);
 
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
   tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+
+  wait_for_tf();
 }
 
 void LocalGpsImu::sync_callback(
   const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
   const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg)
 {
-  if (!init_) {
-    // convert the GPS coordinate to local coordinate.
-    // The first measurement is treated as the inital frame
-    geo_converter_.Reset(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude);
+  // dummy variables
+  int zone;
+  bool northp;
 
-    // retive the transform from initial frame to world frame
-    tf2::Vector3 t_init;
-    t_init.setZero();
+  if (!init_) {
+    // set the first frame as the new world frame.
+    double init_x, init_y, init_z;
+    GeographicLib::UTMUPS::Forward(gps_msg->latitude, gps_msg->longitude,
+      zone, northp, init_x, init_y);
+    init_z = gps_msg->altitude;
+
+    tf2::Vector3 t_init(init_x, init_y, init_z);
     tf2::Quaternion q_init;
     tf2::fromMsg(imu_msg->orientation, q_init);
     q_init.normalize();
+    tf2::Transform world_oxts_trans(q_init, t_init);
 
-    // This is T_{wi}. initial frame ---> world frame
-    world_init_trans_.setOrigin(t_init);
-    world_init_trans_.setRotation(q_init);
-
+    // T_{new_world, world}
+    new_world_world_trans_.mult(base_oxts_trans_, world_oxts_trans.inverse());
+    oxts_base_trans_ = base_oxts_trans_.inverse();
     init_ = true;
   }
 
   // get current pose in the initial frame (right-handed reference!)
   double x, y, z;
-  geo_converter_.Forward(gps_msg->latitude, gps_msg->longitude, gps_msg->altitude, x, y, z);
+  GeographicLib::UTMUPS::Forward(gps_msg->latitude, gps_msg->longitude,
+    zone, northp, x, y);
+  z = gps_msg->altitude;
+
   tf2::Vector3 t_curr(x, y, z);
   tf2::Quaternion q_curr;
   tf2::fromMsg(imu_msg->orientation, q_curr);
+  q_curr.normalize();
+  tf2::Transform world_oxts_trans(q_curr, t_curr);
 
-  // This is T_{wc}. current frame ---> world frame
-  tf2::Transform world_curr_trans(q_curr, t_curr);
-
-  // This is T_{ic}. current frame ---> initial frame. Now inital frame is the fixed frame.
-  tf2::Transform init_curr_trans;
-  init_curr_trans.mult(world_init_trans_.inverse(), world_curr_trans);
+  // This is T_{new_world, base}
+  tf2::Transform new_world_base_trans =
+    new_world_world_trans_ * world_oxts_trans * oxts_base_trans_;
 
   // publish shifted gps coordinate in the initial fixed frame
   kitti_msgs::msg::GeoPlanePoint gps_shifted_msg;
   gps_shifted_msg.header = gps_msg->header;
-  gps_shifted_msg.local_coordinate = tf2::toMsg(init_curr_trans.getOrigin());
+  gps_shifted_msg.header.frame_id = "oxts_base_link";
+  gps_shifted_msg.local_coordinate = tf2::toMsg(new_world_base_trans.getOrigin());
   gps_shifted_msg.position_covariance = gps_msg->position_covariance;
   gps_pub_->publish(gps_shifted_msg);
 
+  // Yi-Chen is here. Need to work on IMU value on new_world
   // publish rotated imu orientation in the inital fixed frame
   sensor_msgs::msg::Imu imu_rotated_msg = *imu_msg;
-  imu_rotated_msg.orientation = tf2::toMsg(init_curr_trans.getRotation());
+  imu_rotated_msg.orientation = tf2::toMsg(new_world_base_trans.getRotation());
   imu_pub_->publish(imu_rotated_msg);
 
   // publish oxts tf msg
   geometry_msgs::msg::TransformStamped oxts_tf;
   oxts_tf.header.stamp = gps_msg->header.stamp;
   oxts_tf.header.frame_id = "map";
-  oxts_tf.child_frame_id = "oxts_link";
-  oxts_tf.transform.translation = tf2::toMsg(init_curr_trans.getOrigin());
-  oxts_tf.transform.rotation = tf2::toMsg(init_curr_trans.getRotation());
+  oxts_tf.child_frame_id = "oxts_base_link";
+  oxts_tf.transform.translation = tf2::toMsg(new_world_base_trans.getOrigin());
+  oxts_tf.transform.rotation = tf2::toMsg(new_world_base_trans.getRotation());
 
   // Send the transformation
   tf_broadcaster_->sendTransform(oxts_tf);
+}
+
+void LocalGpsImu::wait_for_tf()
+{
+  rclcpp::Time start = rclcpp::Node::now();
+
+  RCLCPP_INFO(
+    get_logger(), "Waiting for tf transform data between frames %s and %s to become available",
+    "base_link", "oxts_link");
+
+  bool transform_successful = false;
+
+  while (!transform_successful) {
+    transform_successful = tf_buffer_->canTransform(
+      "base_link", "oxts_link",
+      tf2::TimePointZero, tf2::durationFromSec(1.0));
+
+    if (transform_successful) {
+      tf2::fromMsg(
+        tf_buffer_->lookupTransform("base_link", "oxts_link", tf2::TimePointZero).transform,
+        base_oxts_trans_);
+      RCLCPP_INFO(get_logger(), "Get the transformation from oxts_link to base_link.");
+      break;
+    }
+
+    rclcpp::Time now = rclcpp::Node::now();
+
+    if ((now - start).seconds() > 20.0) {
+      RCLCPP_WARN_ONCE(
+        get_logger(),
+        "No transform between frams %s and %s available after %f seconds of waiting. This warning only prints once.",
+        "base_link", "velo_link", (now - start).seconds());
+    }
+
+    if (!rclcpp::ok()) {
+      return;
+    }
+
+    rclcpp::WallRate(1.0).sleep();
+  }
+
+  rclcpp::Time end = rclcpp::Node::now();
+  RCLCPP_INFO(
+    get_logger(), "Finished waiting for tf, waited %f seconds", (end - start).seconds());
 }
 
 } // namespace local_gps_imu
