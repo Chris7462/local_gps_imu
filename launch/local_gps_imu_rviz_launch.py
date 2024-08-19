@@ -47,7 +47,7 @@ def generate_launch_description():
         namespace='oxts',
         parameters=[{
             'target_frame_name': 'map',
-            'source_frame_name': 'oxts_base_link',
+            'source_frame_name': 'oxts_local',
             'trajectory_update_rate': 10.0,
             'trajectory_publish_rate': 10.0
         }]

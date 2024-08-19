@@ -64,9 +64,9 @@ Visualization Manager:
           Value: true
         map:
           Value: true
-        oxts_base_link:
-          Value: true
         oxts_link:
+          Value: true
+        oxts_local:
           Value: true
         velo_link:
           Value: true
@@ -77,7 +77,7 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          oxts_base_link:
+          oxts_local:
             {}
       Update Interval: 0
       Value: true
@@ -155,25 +155,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 46.139488220214844
+      Distance: 50
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -20.038631439208984
-        Y: -0.6783924102783203
-        Z: 5.018448829650879
+        X: 0
+        Y: 0
+        Z: 0
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3853985071182251
-      Target Frame: oxts_base_link
+      Pitch: 0.3453986644744873
+      Target Frame: oxts_local
       Value: Orbit (rviz)
-      Yaw: 3.143582820892334
+      Yaw: 3.200396776199341
     Saved: ~
 Window Geometry:
   Displays:

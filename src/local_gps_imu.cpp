@@ -23,10 +23,10 @@ LocalGpsImu::LocalGpsImu()
   sync_.registerCallback(&LocalGpsImu::sync_callback, this);
 
   gps_pub_ = create_publisher<kitti_msgs::msg::GeoPlanePoint>(
-    "kitti/oxts/gps_shifted", qos);
+    "kitti/vehicle/gps_local", qos);
 
   imu_pub_ = create_publisher<sensor_msgs::msg::Imu>(
-    "kitti/oxts/imu_rotated", qos);
+    "kitti/vehicle/imu_local", qos);
 
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -79,24 +79,32 @@ void LocalGpsImu::sync_callback(
     new_world_world_trans_ * world_oxts_trans * oxts_base_trans_;
 
   // publish shifted gps coordinate in the initial fixed frame
-  kitti_msgs::msg::GeoPlanePoint gps_shifted_msg;
-  gps_shifted_msg.header = gps_msg->header;
-  gps_shifted_msg.header.frame_id = "oxts_base_link";
-  gps_shifted_msg.local_coordinate = tf2::toMsg(new_world_base_trans.getOrigin());
-  gps_shifted_msg.position_covariance = gps_msg->position_covariance;
-  gps_pub_->publish(gps_shifted_msg);
+  kitti_msgs::msg::GeoPlanePoint gps_local_msg;
+  gps_local_msg.header = gps_msg->header;
+  gps_local_msg.header.frame_id = "gps_local";
+  gps_local_msg.local_coordinate = tf2::toMsg(new_world_base_trans.getOrigin());
+  gps_local_msg.position_covariance = gps_msg->position_covariance;
+  gps_pub_->publish(gps_local_msg);
 
-  // Yi-Chen is here. Need to work on IMU value on new_world
   // publish rotated imu orientation in the inital fixed frame
-  sensor_msgs::msg::Imu imu_rotated_msg = *imu_msg;
-  imu_rotated_msg.orientation = tf2::toMsg(new_world_base_trans.getRotation());
-  imu_pub_->publish(imu_rotated_msg);
+  sensor_msgs::msg::Imu imu_local_msg = *imu_msg;
+  imu_local_msg.header.frame_id = "imu_local";
+  // replace orientation to new one based on the new world.
+  imu_local_msg.orientation = tf2::toMsg(new_world_base_trans.getRotation());
+  // replace linear acc to vehicle acc
+  tf2::Vector3 r(base_oxts_trans_.getOrigin());
+  tf2::Vector3 omega;
+  tf2::fromMsg(imu_msg->angular_velocity, omega);
+  tf2::Vector3 linear_acc;
+  tf2::fromMsg(imu_msg->linear_acceleration, linear_acc);
+  imu_local_msg.linear_acceleration = tf2::toMsg(linear_acc + omega.cross(omega.cross(r)));
+  imu_pub_->publish(imu_local_msg);
 
   // publish oxts tf msg
   geometry_msgs::msg::TransformStamped oxts_tf;
   oxts_tf.header.stamp = gps_msg->header.stamp;
   oxts_tf.header.frame_id = "map";
-  oxts_tf.child_frame_id = "oxts_base_link";
+  oxts_tf.child_frame_id = "oxts_local";
   oxts_tf.transform.translation = tf2::toMsg(new_world_base_trans.getOrigin());
   oxts_tf.transform.rotation = tf2::toMsg(new_world_base_trans.getRotation());
 
