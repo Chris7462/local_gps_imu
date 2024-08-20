@@ -16,6 +16,15 @@ def generate_launch_description():
              '/data/kitti/raw/2011_09_29_drive_0071_sync_bag', '--clock']
     )
 
+    # The TF and URDF of the vehicle
+    robot_state_publisher_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([
+                FindPackageShare('kitti_urdf'), 'launch', 'kitti_urdf_launch.py'
+            ])
+        ])
+    )
+
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
@@ -38,7 +47,7 @@ def generate_launch_description():
         namespace='oxts',
         parameters=[{
             'target_frame_name': 'map',
-            'source_frame_name': 'oxts_link',
+            'source_frame_name': 'oxts_local',
             'trajectory_update_rate': 10.0,
             'trajectory_publish_rate': 10.0
         }]
@@ -47,6 +56,7 @@ def generate_launch_description():
     return LaunchDescription([
         SetParameter(name='use_sim_time', value=True),
         bag_exec,
+        robot_state_publisher_launch,
         rviz_node,
         local_gps_imu_launch,
         TimerAction(
