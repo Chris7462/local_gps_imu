@@ -29,7 +29,8 @@ def generate_launch_description():
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        arguments=['-d', join(get_package_share_directory('local_gps_imu'), 'rviz', 'local_gps_imu.rviz')]
+        arguments=['-d', join(get_package_share_directory('local_gps_imu'), 'rviz',
+                              'local_gps_imu.rviz')]
     )
 
     local_gps_imu_launch = IncludeLaunchDescription(

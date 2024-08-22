@@ -4,6 +4,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <sensor_msgs/msg/imu.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -28,14 +29,16 @@ public:
 private:
   message_filters::Subscriber<sensor_msgs::msg::Imu> imu_sub_;
   message_filters::Subscriber<sensor_msgs::msg::NavSatFix> gps_sub_;
+  message_filters::Subscriber<geometry_msgs::msg::TwistStamped> vel_sub_;
 
   using policy_t = message_filters::sync_policies::ApproximateTime<
-    sensor_msgs::msg::Imu, sensor_msgs::msg::NavSatFix>;
+    sensor_msgs::msg::Imu, sensor_msgs::msg::NavSatFix, geometry_msgs::msg::TwistStamped>;
 
   message_filters::Synchronizer<policy_t> sync_;
 
   rclcpp::Publisher<kitti_msgs::msg::GeoPlanePoint>::SharedPtr gps_pub_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr vel_pub_;
 
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
@@ -50,7 +53,8 @@ private:
 
   void sync_callback(
     const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
-    const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg);
+    const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg,
+    const geometry_msgs::msg::TwistStamped::ConstSharedPtr vel_msg);
 
   void wait_for_tf();
 };

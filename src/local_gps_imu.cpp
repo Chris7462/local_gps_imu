@@ -12,7 +12,7 @@ namespace local_gps_imu
 {
 
 LocalGpsImu::LocalGpsImu()
-: Node("local_gps_imu_node"), sync_(policy_t(10), imu_sub_, gps_sub_), init_(false)
+: Node("local_gps_imu_node"), sync_(policy_t(10), imu_sub_, gps_sub_, vel_sub_), init_(false)
 {
   rclcpp::QoS qos(10);
 
@@ -20,6 +20,7 @@ LocalGpsImu::LocalGpsImu()
   auto rmw_qos_profile = qos.get_rmw_qos_profile();
   imu_sub_.subscribe(this, "kitti/oxts/imu", rmw_qos_profile);
   gps_sub_.subscribe(this, "kitti/oxts/gps/fix", rmw_qos_profile);
+  vel_sub_.subscribe(this, "kitti/oxts/gps/vel", rmw_qos_profile);
   sync_.registerCallback(&LocalGpsImu::sync_callback, this);
 
   gps_pub_ = create_publisher<kitti_msgs::msg::GeoPlanePoint>(
@@ -27,6 +28,9 @@ LocalGpsImu::LocalGpsImu()
 
   imu_pub_ = create_publisher<sensor_msgs::msg::Imu>(
     "kitti/vehicle/imu_local", qos);
+
+  vel_pub_ = create_publisher<geometry_msgs::msg::TwistStamped>(
+    "kitti/vehicle/velocity", qos);
 
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -37,7 +41,8 @@ LocalGpsImu::LocalGpsImu()
 
 void LocalGpsImu::sync_callback(
   const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg,
-  const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg)
+  const sensor_msgs::msg::NavSatFix::ConstSharedPtr gps_msg,
+  const geometry_msgs::msg::TwistStamped::ConstSharedPtr vel_msg)
 {
   // dummy variables
   int zone;
@@ -46,8 +51,8 @@ void LocalGpsImu::sync_callback(
   if (!init_) {
     // set the first frame as the new world frame.
     double init_x, init_y, init_z;
-    GeographicLib::UTMUPS::Forward(gps_msg->latitude, gps_msg->longitude,
-      zone, northp, init_x, init_y);
+    GeographicLib::UTMUPS::Forward(
+      gps_msg->latitude, gps_msg->longitude, zone, northp, init_x, init_y);
     init_z = gps_msg->altitude;
 
     tf2::Vector3 t_init(init_x, init_y, init_z);
@@ -64,8 +69,8 @@ void LocalGpsImu::sync_callback(
 
   // get current pose in the initial frame (right-handed reference!)
   double x, y, z;
-  GeographicLib::UTMUPS::Forward(gps_msg->latitude, gps_msg->longitude,
-    zone, northp, x, y);
+  GeographicLib::UTMUPS::Forward(
+    gps_msg->latitude, gps_msg->longitude, zone, northp, x, y);
   z = gps_msg->altitude;
 
   tf2::Vector3 t_curr(x, y, z);
@@ -81,24 +86,37 @@ void LocalGpsImu::sync_callback(
   // publish shifted gps coordinate in the initial fixed frame
   kitti_msgs::msg::GeoPlanePoint gps_local_msg;
   gps_local_msg.header = gps_msg->header;
-  gps_local_msg.header.frame_id = "gps_local";
+  gps_local_msg.header.frame_id = "base_link";
   gps_local_msg.local_coordinate = tf2::toMsg(new_world_base_trans.getOrigin());
   gps_local_msg.position_covariance = gps_msg->position_covariance;
   gps_pub_->publish(gps_local_msg);
 
   // publish rotated imu orientation in the inital fixed frame
   sensor_msgs::msg::Imu imu_local_msg = *imu_msg;
-  imu_local_msg.header.frame_id = "imu_local";
+  imu_local_msg.header.frame_id = "base_link";
   // replace orientation to new one based on the new world.
   imu_local_msg.orientation = tf2::toMsg(new_world_base_trans.getRotation());
   // replace linear acc to vehicle acc
   tf2::Vector3 r(base_oxts_trans_.getOrigin());
   tf2::Vector3 omega;
   tf2::fromMsg(imu_msg->angular_velocity, omega);
+  tf2::Vector3 nu;
+  tf2::fromMsg(vel_msg->twist.linear, nu);
   tf2::Vector3 linear_acc;
   tf2::fromMsg(imu_msg->linear_acceleration, linear_acc);
-  imu_local_msg.linear_acceleration = tf2::toMsg(linear_acc + omega.cross(omega.cross(r)));
+  // The equation is
+  // alpha_car = R_{car,imu}(alpha_{imu}+2 w^*nu_{imu} + \dot{w}^*r + w^w^*r). R = I in this case
+  // \dot{w} is angular acc, which we don't have it. So, simply ignore this value
+  imu_local_msg.linear_acceleration =
+    tf2::toMsg(linear_acc + 2 * omega.cross(nu) + omega.cross(omega.cross(r)));
   imu_pub_->publish(imu_local_msg);
+
+  // publish velocity in local
+  geometry_msgs::msg::TwistStamped vel_local_msg = *vel_msg;
+  vel_local_msg.header.frame_id = "base_link";
+  // nu_{car} = R_{car,imu}(nu_{imu}+omega^*r)
+  vel_local_msg.twist.linear = tf2::toMsg(nu + omega.cross(r));
+  vel_pub_->publish(vel_local_msg);
 
   // publish oxts tf msg
   geometry_msgs::msg::TransformStamped oxts_tf;
