@@ -1,0 +1,19 @@
+local_gps_imu_node:
+  ros__parameters:
+    # Input topics
+    imu_input_topic: "kitti/oxts/imu"
+    gps_input_topic: "kitti/oxts/gps/fix"
+    vel_input_topic: "kitti/oxts/gps/vel"
+
+    # Output topics
+    gps_output_topic: "kitti/vehicle/gps_local"
+    imu_output_topic: "kitti/vehicle/imu_local"
+    vel_output_topic: "kitti/vehicle/velocity"
+
+    # Queue sizes
+    queue_size: 10        # QoS depth for subscribers/publishers
+    sync_queue_size: 10   # ApproximateTime synchronizer queue size
+
+    # Seconds to wait for the base_link -> oxts_link static transform before
+    # warning; waiting continues past this, it just starts logging once.
+    tf_wait_timeout: 20.0
