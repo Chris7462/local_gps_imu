@@ -256,7 +256,8 @@ void LocalGpsImu::wait_for_tf()
   }
 
   rclcpp::Time end = rclcpp::Node::now();
-  RCLCPP_INFO(get_logger(), "Finished waiting for tf, waited %.2f seconds", (end - start).seconds());
+  RCLCPP_INFO(get_logger(), "Finished waiting for tf, waited %.2f seconds",
+    (end - start).seconds());
 }
 
 } // namespace local_gps_imu
