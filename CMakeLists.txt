@@ -28,7 +28,7 @@ list(APPEND CMAKE_MODULE_PATH /usr/share/cmake/geographiclib)
 find_package(GeographicLib REQUIRED)
 
 # local created package
-find_package(kitti_msgs REQUIRED)
+find_package(av_msgs REQUIRED)
 
 add_executable(${PROJECT_NAME}_node
   src/local_gps_imu_node.cpp
@@ -46,7 +46,7 @@ target_link_libraries(${PROJECT_NAME}_node PRIVATE
   ${tf2_TARGETS}
   ${tf2_ros_TARGETS}
   ${tf2_geometry_msgs_TARGETS}
-  ${kitti_msgs_TARGETS}
+  ${av_msgs_TARGETS}
   ${GeographicLib_LIBRARIES})
 
 target_compile_features(${PROJECT_NAME}_node PRIVATE cxx_std_17)  # Require C++17

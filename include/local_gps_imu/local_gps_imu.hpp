@@ -17,7 +17,7 @@
 #include <tf2_ros/transform_broadcaster.hpp>
 
 // local created ROS message
-#include "kitti_msgs/msg/geo_plane_point.hpp"
+#include "av_msgs/msg/geo_plane_point.hpp"
 
 
 namespace local_gps_imu
@@ -93,7 +93,7 @@ private:
 
   std::shared_ptr<message_filters::Synchronizer<policy_t>> sync_;
 
-  rclcpp::Publisher<kitti_msgs::msg::GeoPlanePoint>::SharedPtr gps_pub_;
+  rclcpp::Publisher<av_msgs::msg::GeoPlanePoint>::SharedPtr gps_pub_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
   rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr vel_pub_;
 

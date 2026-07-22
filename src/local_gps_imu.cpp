@@ -104,7 +104,7 @@ bool LocalGpsImu::initialize_ros_components()
       policy_t(sync_queue_size_), imu_sub_, gps_sub_, vel_sub_);
     sync_->registerCallback(&LocalGpsImu::sync_callback, this);
 
-    gps_pub_ = create_publisher<kitti_msgs::msg::GeoPlanePoint>(gps_output_topic_, qos);
+    gps_pub_ = create_publisher<av_msgs::msg::GeoPlanePoint>(gps_output_topic_, qos);
     imu_pub_ = create_publisher<sensor_msgs::msg::Imu>(imu_output_topic_, qos);
     vel_pub_ = create_publisher<geometry_msgs::msg::TwistStamped>(vel_output_topic_, qos);
 
@@ -166,7 +166,7 @@ void LocalGpsImu::sync_callback(
     *new_world_world_trans_ * world_oxts_trans * oxts_base_trans_;
 
   // publish shifted gps coordinate in the initial fixed frame
-  kitti_msgs::msg::GeoPlanePoint gps_local_msg;
+  av_msgs::msg::GeoPlanePoint gps_local_msg;
   gps_local_msg.header = gps_msg->header;
   gps_local_msg.header.frame_id = base_frame_id_;
   gps_local_msg.local_coordinate = tf2::toMsg(new_world_base_trans.getOrigin());
