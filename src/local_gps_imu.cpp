@@ -43,9 +43,9 @@ bool LocalGpsImu::initialize_parameters()
 
     // Output topics
     gps_output_topic_ = declare_parameter(
-      "gps_output_topic", std::string("kitti/vehicle/gps_local"));
+      "gps_output_topic", std::string("kitti/vehicle/gps"));
     imu_output_topic_ = declare_parameter(
-      "imu_output_topic", std::string("kitti/vehicle/imu_local"));
+      "imu_output_topic", std::string("kitti/vehicle/imu"));
     vel_output_topic_ = declare_parameter(
       "vel_output_topic", std::string("kitti/vehicle/velocity"));
 
@@ -130,30 +130,18 @@ void LocalGpsImu::sync_callback(
   int zone;
   bool northp;
 
-  if (!new_world_world_trans_) {
-    // set the first frame as the new world frame.
-    double init_x, init_y, init_z;
-    GeographicLib::UTMUPS::Forward(
-      gps_msg->latitude, gps_msg->longitude, zone, northp, init_x, init_y);
-    init_z = gps_msg->altitude;
-
-    tf2::Vector3 t_init(init_x, init_y, init_z);
-    tf2::Quaternion q_init;
-    tf2::fromMsg(imu_msg->orientation, q_init);
-    q_init.normalize();
-    tf2::Transform world_oxts_trans(q_init, t_init);
-
-    // T_{new_world, world}
-    tf2::Transform new_world_world_trans;
-    new_world_world_trans.mult(base_oxts_trans_, world_oxts_trans.inverse());
-    new_world_world_trans_ = new_world_world_trans;
-  }
-
-  // get current pose in the initial frame (right-handed reference!)
+  // get current pose in the world (UTM/map) frame
   double x, y, z;
   GeographicLib::UTMUPS::Forward(
     gps_msg->latitude, gps_msg->longitude, zone, northp, x, y);
   z = gps_msg->altitude;
+
+  if (!origin_captured_) {
+    origin_x_ = x;
+    origin_y_ = y;
+    origin_z_ = z;
+    origin_captured_ = true;
+  }
 
   tf2::Vector3 t_curr(x, y, z);
   tf2::Quaternion q_curr;
@@ -161,23 +149,23 @@ void LocalGpsImu::sync_callback(
   q_curr.normalize();
   tf2::Transform world_oxts_trans(q_curr, t_curr);
 
-  // This is T_{new_world, base}
-  tf2::Transform new_world_base_trans =
-    *new_world_world_trans_ * world_oxts_trans * oxts_base_trans_;
+  // This is T_{world, base} -- world is the raw UTM/map frame (no origin shift)
+  tf2::Transform new_world_base_trans = world_oxts_trans * oxts_base_trans_;
 
-  // publish shifted gps coordinate in the initial fixed frame
-  av_msgs::msg::GeoPlanePoint gps_local_msg;
-  gps_local_msg.header = gps_msg->header;
-  gps_local_msg.header.frame_id = base_frame_id_;
-  gps_local_msg.local_coordinate = tf2::toMsg(new_world_base_trans.getOrigin());
-  gps_local_msg.position_covariance = gps_msg->position_covariance;
-  gps_pub_->publish(gps_local_msg);
+  // publish gps coordinate of base_link in the map (UTM) frame -- raw UTM,
+  // this is what ekf_localizer consumes and needs the true value for.
+  av_msgs::msg::GeoPlanePoint gps_out_msg;
+  gps_out_msg.header = gps_msg->header;
+  gps_out_msg.header.frame_id = base_frame_id_;
+  gps_out_msg.position = tf2::toMsg(new_world_base_trans.getOrigin());
+  gps_out_msg.position_covariance = gps_msg->position_covariance;
+  gps_pub_->publish(gps_out_msg);
 
-  // publish rotated imu orientation in the inital fixed frame
-  sensor_msgs::msg::Imu imu_local_msg = *imu_msg;
-  imu_local_msg.header.frame_id = base_frame_id_;
-  // replace orientation to new one based on the new world.
-  imu_local_msg.orientation = tf2::toMsg(new_world_base_trans.getRotation());
+  // publish rotated imu orientation in the map (UTM) frame
+  sensor_msgs::msg::Imu imu_out_msg = *imu_msg;
+  imu_out_msg.header.frame_id = base_frame_id_;
+  // replace orientation to new one based on the world frame.
+  imu_out_msg.orientation = tf2::toMsg(new_world_base_trans.getRotation());
   // replace linear acc to vehicle acc
   tf2::Vector3 r(base_oxts_trans_.getOrigin());
   tf2::Vector3 omega;
@@ -189,23 +177,29 @@ void LocalGpsImu::sync_callback(
   // The equation is
   // alpha_car = R_{car,imu}(alpha_{imu}+2 w^*nu_{imu} + \dot{w}^*r + w^w^*r). R = I in this case
   // \dot{w} is angular acc, which we don't have it. So, simply ignore this value
-  imu_local_msg.linear_acceleration =
+  imu_out_msg.linear_acceleration =
     tf2::toMsg(linear_acc + 2 * omega.cross(nu) + omega.cross(omega.cross(r)));
-  imu_pub_->publish(imu_local_msg);
+  imu_pub_->publish(imu_out_msg);
 
   // publish velocity in local
-  geometry_msgs::msg::TwistStamped vel_local_msg = *vel_msg;
-  vel_local_msg.header.frame_id = base_frame_id_;
+  geometry_msgs::msg::TwistStamped vel_out_msg = *vel_msg;
+  vel_out_msg.header.frame_id = base_frame_id_;
   // nu_{car} = R_{car,imu}(nu_{imu}+omega^*r)
-  vel_local_msg.twist.linear = tf2::toMsg(nu + omega.cross(r));
-  vel_pub_->publish(vel_local_msg);
+  vel_out_msg.twist.linear = tf2::toMsg(nu + omega.cross(r));
+  vel_pub_->publish(vel_out_msg);
 
-  // publish oxts tf msg
+  // publish oxts tf msg -- offset by the first-fix origin so this stays
+  // small-magnitude. Large per-frame TF values render as visible jitter in
+  // rviz even when the composed transform back to a "small" parent frame
+  // would be exact in double precision, since rviz builds one Ogre scene
+  // node per TF frame and casts each independently to float32.
   geometry_msgs::msg::TransformStamped oxts_tf;
   oxts_tf.header.stamp = gps_msg->header.stamp;
   oxts_tf.header.frame_id = "map";
   oxts_tf.child_frame_id = "oxts_local";
-  oxts_tf.transform.translation = tf2::toMsg(new_world_base_trans.getOrigin());
+  oxts_tf.transform.translation.x = new_world_base_trans.getOrigin().x() - origin_x_;
+  oxts_tf.transform.translation.y = new_world_base_trans.getOrigin().y() - origin_y_;
+  oxts_tf.transform.translation.z = new_world_base_trans.getOrigin().z() - origin_z_;
   oxts_tf.transform.rotation = tf2::toMsg(new_world_base_trans.getRotation());
 
   // Send the transformation

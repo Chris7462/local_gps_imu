@@ -6,8 +6,8 @@ local_gps_imu_node:
     vel_input_topic: "kitti/oxts/gps/vel"
 
     # Output topics
-    gps_output_topic: "kitti/vehicle/gps_local"
-    imu_output_topic: "kitti/vehicle/imu_local"
+    gps_output_topic: "kitti/vehicle/gps"
+    imu_output_topic: "kitti/vehicle/imu"
     vel_output_topic: "kitti/vehicle/velocity"
 
     # Queue sizes

@@ -1,8 +1,5 @@
 #pragma once
 
-// std header
-#include <optional>
-
 // ros header
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
@@ -107,9 +104,15 @@ private:
   tf2::Transform base_oxts_trans_;
   tf2::Transform oxts_base_trans_;
 
-  // T_{new_world, world}. Only knowable once the first synchronized message
-  // arrives, so it's computed lazily on first use in sync_callback().
-  std::optional<tf2::Transform> new_world_world_trans_;
+  // First-fix offset, captured once on the first message. gps_out_msg /
+  // imu_out_msg / vel_out_msg published to ekf_localizer stay raw UTM
+  // (unaffected by this) -- this offset is only subtracted from the
+  // oxts_tf broadcast below, purely so rviz doesn't render large per-frame
+  // TF values (see local_gps_imu.cpp for why that matters).
+  bool origin_captured_ = false;
+  double origin_x_ = 0.0;
+  double origin_y_ = 0.0;
+  double origin_z_ = 0.0;
 };
 
 } // namespace local_gps_imu
